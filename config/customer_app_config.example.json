@@ -1,0 +1,13 @@
+{
+  "api_base_url": "https://your-api-host/business",
+  "auth_base_url": "https://your-api-host/auth",
+  "language": "zh-CN",
+  "auth": {
+    "authorization": "Basic your-basic-authorization",
+    "username": "your-username",
+    "password": "your-password",
+    "scope": "server",
+    "grant_type": "password"
+  },
+  "token": ""
+}

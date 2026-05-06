@@ -2,7 +2,11 @@
 Simple MCP stdio <-> WebSocket pipe with optional unified config.
 Version: 0.2.0
 
-Usage (env):
+Usage:
+    Configure mcpEndpoint in ./mcp_config.json, then run:
+    python mcp_pipe.py
+
+Usage (env override):
     export MCP_ENDPOINT=<ws_endpoint>
     # Windows (PowerShell): $env:MCP_ENDPOINT = "<ws_endpoint>"
 
@@ -17,6 +21,7 @@ Config discovery order:
     $MCP_CONFIG, then ./mcp_config.json
 
 Env overrides:
+    MCP_ENDPOINT overrides config.mcpEndpoint
     (none for proxy; uses current Python: python -m mcp_proxy)
 """
 
@@ -182,6 +187,20 @@ def load_config():
         return {}
 
 
+def get_endpoint_url():
+    """Read MCP WebSocket endpoint from env first, then mcp_config.json."""
+    endpoint_url = os.environ.get("MCP_ENDPOINT")
+    if endpoint_url:
+        return endpoint_url
+
+    cfg = load_config()
+    endpoint_url = cfg.get("mcpEndpoint") if isinstance(cfg, dict) else None
+    if endpoint_url:
+        return str(endpoint_url)
+
+    return None
+
+
 def build_server_command(target=None):
     """Build [cmd,...] and env for the server process for a given target.
 
@@ -243,10 +262,10 @@ if __name__ == "__main__":
     # Register signal handler
     signal.signal(signal.SIGINT, signal_handler)
     
-    # Get token from environment variable or command line arguments
-    endpoint_url = os.environ.get('MCP_ENDPOINT')
+    # Get MCP endpoint from environment variable or config file
+    endpoint_url = get_endpoint_url()
     if not endpoint_url:
-        logger.error("Please set the `MCP_ENDPOINT` environment variable")
+        logger.error("Please set `mcpEndpoint` in mcp_config.json or `MCP_ENDPOINT` environment variable")
         sys.exit(1)
     
     # Determine target: default to all if no arg; single target otherwise

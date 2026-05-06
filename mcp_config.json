@@ -1,9 +1,10 @@
 {
+  "mcpEndpoint": "ws://your-xiaozhi-host/mcp_endpoint/mcp/?token=your-token",
   "mcpServers": {
-    "local-stdio-calculator": {
+    "customer-app-mcp-server": {
       "type": "stdio",
       "command": "python",
-      "args": ["-m", "calculator"]
+      "args": ["-m", "mcp_server"]
     },
     "remote-sse-server": {
       "type": "sse",

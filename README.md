@@ -1,8 +1,8 @@
-# MCP Sample Project | MCP 示例项目
+# Customer App MCP Server | 客户 App MCP 服务
 
-A powerful interface for extending AI capabilities through remote control, calculations, email operations, knowledge search, and more.
+An MCP server for querying customer app vehicle data, work-hour statistics, traces, faults, maintenance plans, and related business APIs.
 
-一个强大的接口，用于通过远程控制、计算、邮件操作、知识搜索等方式扩展AI能力。
+一个用于查询客户 App 车辆数据、工时统计、轨迹、故障、维保计划等业务接口的 MCP 服务。
 
 ## Overview | 概述
 
@@ -12,12 +12,10 @@ MCP（模型上下文协议）是一个允许服务器向语言模型暴露可�
 
 ## Features | 特性
 
-- 🔌 Bidirectional communication between AI and external tools | AI与外部工具之间的双向通信
-- 🔄 Automatic reconnection with exponential backoff | 具有指数退避的自动重连机制
-- 📊 Real-time data streaming | 实时数据流传输
-- 🛠️ Easy-to-use tool creation interface | 简单易用的工具创建接口
-- 🔒 Secure WebSocket communication | 安全的WebSocket通信
-- ⚙️ Multiple transport types support (stdio/sse/http) | 支持多种传输类型（stdio/sse/http）
+- Vehicle and device lookup by vincode | 按设备编码/车架号查询车辆设备
+- Work-hour statistics and daily details | 工时汇总和按日明细查询
+- Trace, condition, fault, and maintenance queries | 轨迹、工况、故障、维保查询
+- WebSocket bridge for Xiaozhi MCP endpoint | 对接小智 MCP 接入点的 WebSocket 管道
 
 ## Quick Start | 快速开始
 
@@ -26,20 +24,31 @@ MCP（模型上下文协议）是一个允许服务器向语言模型暴露可�
 pip install -r requirements.txt
 ```
 
-2. Set up environment variables | 设置环境变量:
+2. Set up MCP endpoint | 设置 MCP 接入点:
+
+Edit `mcp_config.json` and replace `mcpEndpoint` with the MCP endpoint copied from your Xiaozhi console.
+
+编辑 `mcp_config.json`，将 `mcpEndpoint` 替换为你在小智控制台智能体里复制的 MCP 接入点地址。
+
+3. Run the MCP pipe | 启动 MCP 管道:
 ```bash
-export MCP_ENDPOINT=<your_mcp_endpoint>
+conda run --no-capture-output -n xiaozhi python mcp_pipe.py
 ```
 
-3. Run the calculator example | 运行计算器示例:
+The command above starts all enabled servers in `mcp_config.json`. `--no-capture-output` keeps logs visible while the process is running.
+
+上面的命令会启动 `mcp_config.json` 中所有启用的服务。`--no-capture-output` 可以让运行日志实时显示。
+
+You can also run the server script directly:
+
+也可以直接指定服务脚本启动：
 ```bash
-python mcp_pipe.py calculator.py
+conda run --no-capture-output -n xiaozhi python mcp_pipe.py mcp_server.py
 ```
 
-Or run all configured servers | 或运行所有配置的服务:
-```bash
-python mcp_pipe.py
-```
+Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough because `mcp_config.json` already defines the server command.
+
+通常不需要再指定 `mcp_server.py`；直接运行 `mcp_pipe.py` 即可，因为 `mcp_config.json` 已经定义了服务启动命令。
 
 *Requires `mcp_config.json` configuration file with server definitions (supports stdio/sse/http transport types)*
 
@@ -48,8 +57,27 @@ python mcp_pipe.py
 ## Project Structure | 项目结构
 
 - `mcp_pipe.py`: Main communication pipe that handles WebSocket connections and process management | 处理WebSocket连接和进程管理的主通信管道
-- `calculator.py`: Example MCP tool implementation for mathematical calculations | 用于数学计算的MCP工具示例实现
+- `mcp_server.py`: MCP server entrypoint and tool registration | MCP 服务入口和工具注册
+- `tools/`: MCP tool adapters and tool-level validation | MCP 工具适配层和工具入参校验
+- `clients/`: External API clients and shared request helpers | 外部接口客户端和公共请求方法
 - `requirements.txt`: Project dependencies | 项目依赖
+
+## Customer App API Config | 客户 App 接口配置
+
+客户 App 接口配置存放在 `config/customer_app_config.json`：
+
+- `api_base_url`: 业务接口 base URL
+- `auth_base_url`: 登录接口 base URL
+- `language`: 请求语言
+- `auth.username` / `auth.password`: 获取登录 token 所需账号密码
+- `auth.authorization`: 获取登录 token 所需 Basic Authorization
+- `token`: 业务接口使用的 Bearer token
+
+获取并写入 token：
+
+```bash
+conda run -n xiaozhi python scripts/fetch_customer_app_token.py
+```
 
 ## Config-driven Servers | 通过配置驱动的服务
 
@@ -60,7 +88,7 @@ python mcp_pipe.py
 - 有参数时运行单个本地脚本文件
 - `type=stdio` 直接启动；`type=sse/http` 通过 `python -m mcp_proxy` 代理
 
-## Creating Your Own MCP Tools | 创建自己的MCP工具
+## Creating MCP Tools | 创建 MCP 工具
 
 Here's a simple example of creating an MCP tool | 以下是一个创建MCP工具的简单示例:
 

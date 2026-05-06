@@ -1,0 +1,356 @@
+from typing import Optional
+
+from clients.customer_app import CustomerAppClient
+
+
+def _error(message: str) -> dict:
+    return {
+        "success": False,
+        "error": message,
+    }
+
+
+def _wrap_response(response_data: dict) -> dict:
+    if response_data.get("success") is False:
+        return response_data
+    return {
+        "success": True,
+        "data": response_data,
+    }
+
+
+def _require(value: Optional[str], name: str) -> Optional[dict]:
+    if value is None or not str(value).strip():
+        return _error(f"{name} is required.")
+    return None
+
+
+def _client(base_url: Optional[str]) -> CustomerAppClient:
+    return CustomerAppClient(base_url=base_url)
+
+
+def query_vehicle_by_vincode_tool(
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """通过 vincode 查询车辆.
+
+    Calls GET /apiForAi/customerVehicle/{vincode}.
+    Uses vincode as the path variable.
+    """
+    validation_error = _require(vincode, "vincode")
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).query_vehicle_by_vincode(
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_work_hours_statistic_info_by_vehicle_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """按车统计运行时间统计信息查询.
+
+    Calls POST /apiForAi/queryWorkHoursStatisticInfoByVehicle.
+    Maps begin_date/end_date/vincode to JSON fields beginDate/endDate/vincode.
+    """
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle(
+            begin_date=begin_date,
+            end_date=end_date,
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_planned_maintained_item_page_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    begin_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    vincode: Optional[str] = None,
+    item_name: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """计划维保分页查询.
+
+    Calls GET /apiForAi/queryPlannedMaintainedItemPage.
+    Maps snake_case tool args to API query fields beginDate/endDate/itemName.
+    """
+    try:
+        response_data = _client(base_url).query_planned_maintained_item_page(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+            itemName=item_name,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def get_customer_condition_tool(
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """获取当前工况.
+
+    Calls GET /customerApp/getCustomerCondition with query field vincode.
+    """
+    validation_error = _require(vincode, "vincode")
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).get_customer_condition(
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_work_hours_page_new_by_date_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    order_asc: Optional[int] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """按车按日期统计运行时间分页接口.
+
+    Calls GET /apiForAi/queryWorkHoursPageNewByDate.
+    Required query fields are beginDate/endDate/vincode.
+    """
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).query_work_hours_page_new_by_date(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+            orderAsc=order_asc,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def get_worktime_calendar_list_from_doris_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """查询客户端设备工作日历 List.
+
+    Calls GET /apiForAi/getWorktimeCalendarListFromDoris.
+    Required query fields are beginDate/endDate/vincode.
+    """
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).get_worktime_calendar_list_from_doris(
+            token=token,
+            language=language,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_trace_tool(
+    begin_time: str,
+    end_time: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """设备轨迹.
+
+    Calls GET /apiForAi/trace.
+    Required query fields are beginTime/endTime/vincode.
+    """
+    validation_error = (
+        _require(begin_time, "begin_time")
+        or _require(end_time, "end_time")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).query_trace(
+            token=token,
+            language=language,
+            beginTime=begin_time,
+            endTime=end_time,
+            vincode=vincode,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_customer_vehicle_page_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vehicle_id: Optional[int] = None,
+    search_key: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """客户设备列表.
+
+    Calls GET /apiForAi/customerVehiclePage.
+    Maps vehicle_id to API query field id.
+    """
+    try:
+        response_data = _client(base_url).query_customer_vehicle_page(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            id=vehicle_id,
+            searchKey=search_key,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_device_fault_page_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vincode: Optional[str] = None,
+    faultcode: Optional[str] = None,
+    starttime: Optional[str] = None,
+    endtime: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """故障告警分页查询.
+
+    Calls GET /apiForAi/deviceFaultPage.
+    Optional filters are vincode, faultcode, starttime, and endtime.
+    """
+    try:
+        response_data = _client(base_url).query_device_fault_page(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            vincode=vincode,
+            faultcode=faultcode,
+            starttime=starttime,
+            endtime=endtime,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_core_info_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """查询核心统计信息（通用）.
+
+    Calls POST /apiForAi/queryCoreInfo.
+    Maps begin_date/end_date/vincode to JSON fields beginDate/endDate/vincode.
+    """
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+
+    try:
+        response_data = _client(base_url).query_core_info(
+            begin_date=begin_date,
+            end_date=end_date,
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
