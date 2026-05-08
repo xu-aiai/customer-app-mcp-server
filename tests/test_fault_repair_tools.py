@@ -98,6 +98,36 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
         self.assertEqual(result["action"], "confirm_submit")
         self.assertEqual(result["submit_payload"]["deviceVin"], "XUGY215LCRKA00005")
 
+    def test_submit_workorder_payload_contains_frontend_fields(self):
+        fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
+
+        with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
+            result = prepare_fault_repair_tool(
+                vincode="XUGY215LCRKA00005",
+                fault_description="GPS电源坏了",
+                new_contact="小徐",
+                new_feedbacktel="18888106769",
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["action"], "confirm_submit")
+        self.assertEqual(
+            result["submit_payload"],
+            {
+                "value": "确认",
+                "action": "confirm_work_order",
+                "type": "submitWorkorder",
+                "deviceVin": "XUGY215LCRKA00005",
+                "faultDescription": "GPS电源坏了",
+                "deviceId": "vehicle-1",
+                "deviceModel": "XE215",
+                "detailAddress": "徐州",
+                "deviceName": "挖掘机",
+                "contactName": "小徐",
+                "contactPhone": "18888106769",
+            },
+        )
+
     def test_invalid_vincode_with_devices_returns_recoverable_error_without_backend_call(self):
         fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
         state = {

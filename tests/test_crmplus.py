@@ -74,13 +74,24 @@ class CRMPlusClientConfigTest(unittest.TestCase):
                 feedback_tel="13800138000",
                 userprofile_code="XUGY215LCRKA00005",
                 memo="发动机无法启动",
+                address="徐州",
             )
 
         self.assertEqual(result, {"new_code": "WO-1"})
         payload = post_json.call_args.args[1]
-        self.assertEqual(payload["gcappOrderId"], "ABCDEF12")
-        self.assertEqual(payload["new_type"], 0)
-        self.assertEqual(payload["new_source"], 7)
+        self.assertEqual(
+            payload,
+            {
+                "new_type": 0,
+                "new_contact": "张三",
+                "new_feedbacktel": "13800138000",
+                "new_userprofile_code": "XUGY215LCRKA00005",
+                "new_memo": "发动机无法启动",
+                "gcappOrderId": "ABCDEF12",
+                "new_source": 7,
+                "new_address": "徐州",
+            },
+        )
 
 
 if __name__ == "__main__":
