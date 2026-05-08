@@ -1,5 +1,5 @@
 {
-  "mcpEndpoint": "ws://10.90.20.110:8004/mcp_endpoint/mcp/?token=GbEZe8dvh4LicK2Yd6QbTX0pWaUT%2BwfSabfurr0s1cs%3D",
+  "mcpEndpoint": "ws://10.90.20.110:8004/mcp_endpoint/mcp/?token=aF6%2FRAJpReOEyd0uK%2FvOCIszbYcjeV9MCkMd0FzxCd4lHlSZ6EDfAZVjoW3HFqZs",
   "mcpServers": {
     "customer-app-mcp-server": {
       "type": "stdio",
