@@ -157,12 +157,17 @@ http://10.90.21.125:9085/ixcmg/serviceOrderUnion/{order_id}
 
 ```json
 {
-  "app_token": "用户客户 App token",
+  "app_token": "可选，用户客户 App token；不传时使用 config/customer_app_config.json 的 token",
   "vincode": "可选设备 VIN",
   "page_num": 1,
   "page_size": 3
 }
 ```
+
+Token 使用边界：
+
+- 工单查询走客户 App token，即 `app_token` / `xcmg_app_token`，未传时使用 `config/customer_app_config.json` 的 `token` 并按客户 App 逻辑自动刷新。
+- CRM+ token 只由 `submit_fault_repair_order` 内部通过 CRM+ `/token` 获取，用于 `POST /api/service/CreateWorkOrder`，不会传给工单查询接口。
 
 工具只返回压缩后的结构化事实数据和中文枚举标签，不做 LLM 总结。
 

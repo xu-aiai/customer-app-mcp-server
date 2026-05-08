@@ -96,12 +96,16 @@ def _require(value: Optional[str], name: str) -> Optional[dict]:
     return None
 
 
-def _resolve_token(
+def _resolve_customer_app_token(
     app_token: Optional[str] = None,
     xcmg_app_token: Optional[str] = None,
-    token: Optional[str] = None,
 ) -> Optional[str]:
-    return app_token or xcmg_app_token or token
+    """Resolve only customer App tokens.
+
+    Do not accept the generic `token` field here: CRM+ tokens are obtained and
+    used only by the CRM+ client when creating work orders.
+    """
+    return app_token or xcmg_app_token
 
 
 def _client(
@@ -160,16 +164,12 @@ def list_service_orders_tool(
     vincode: Optional[str] = None,
     page_num: int = 1,
     page_size: int = 3,
-    token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
 ) -> dict:
     """List current user's existing service orders."""
-    resolved_token = _resolve_token(app_token, xcmg_app_token, token)
-    validation_error = _require(resolved_token, "app_token")
-    if validation_error:
-        return validation_error
+    resolved_token = _resolve_customer_app_token(app_token, xcmg_app_token)
 
     try:
         records = _client(
@@ -201,17 +201,13 @@ def get_service_order_detail_tool(
     order_id: str,
     app_token: Optional[str] = None,
     xcmg_app_token: Optional[str] = None,
-    token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
 ) -> dict:
     """Get one existing service order detail."""
-    resolved_token = _resolve_token(app_token, xcmg_app_token, token)
-    validation_error = _require(resolved_token, "app_token") or _require(
-        order_id,
-        "order_id",
-    )
+    resolved_token = _resolve_customer_app_token(app_token, xcmg_app_token)
+    validation_error = _require(order_id, "order_id")
     if validation_error:
         return validation_error
 

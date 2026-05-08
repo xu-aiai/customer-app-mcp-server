@@ -503,7 +503,6 @@ def list_service_orders(
     vincode: Optional[str] = None,
     page_num: int = 1,
     page_size: int = 3,
-    token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
@@ -518,9 +517,8 @@ def list_service_orders(
     - 我提的工单状态。
 
     API: GET /ixcmg/serviceOrderUnion/getPage
-    必填参数：
-    - app_token/xcmg_app_token: 客户 App 用户 token。
     可选参数：
+    - app_token/xcmg_app_token: 客户 App 用户 token；不传时使用配置文件 token。
     - vincode: 设备 VIN，存在时按设备过滤。
     - page_num/page_size: 分页参数，默认 1/3。
 
@@ -532,7 +530,6 @@ def list_service_orders(
         vincode=vincode,
         page_num=page_num,
         page_size=page_size,
-        token=token,
         language=language,
         base_url=base_url,
         service_base_url=service_base_url,
@@ -544,7 +541,6 @@ def get_service_order_detail(
     order_id: str,
     app_token: Optional[str] = None,
     xcmg_app_token: Optional[str] = None,
-    token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
@@ -559,7 +555,8 @@ def get_service_order_detail(
     API: GET /ixcmg/serviceOrderUnion/{order_id}
     必填参数：
     - order_id: 工单 ID、CRM 编号或服务单编号。
-    - app_token/xcmg_app_token: 客户 App 用户 token。
+    可选参数：
+    - app_token/xcmg_app_token: 客户 App 用户 token；不传时使用配置文件 token。
 
     返回压缩后的结构化 record，不做 LLM 总结。
     """
@@ -567,7 +564,6 @@ def get_service_order_detail(
         order_id=order_id,
         app_token=app_token,
         xcmg_app_token=xcmg_app_token,
-        token=token,
         language=language,
         base_url=base_url,
         service_base_url=service_base_url,

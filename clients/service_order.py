@@ -20,7 +20,7 @@ class ServiceOrderClient:
 
     def fetch_orders(
         self,
-        app_token: str,
+        app_token: Optional[str] = None,
         vincode: Optional[str] = None,
         page_num: int = 1,
         page_size: int = 3,
@@ -50,8 +50,8 @@ class ServiceOrderClient:
 
     def fetch_order_detail(
         self,
-        app_token: str,
         order_id: str,
+        app_token: Optional[str] = None,
         language: Optional[str] = None,
     ) -> dict:
         """Fetch a single service order detail.
