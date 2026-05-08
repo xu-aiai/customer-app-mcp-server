@@ -1,5 +1,6 @@
 import json
 import time
+import uuid
 from json import JSONDecodeError
 from typing import Any, Dict, Optional
 from urllib import error, parse, request
@@ -78,6 +79,7 @@ class CRMPlusClient:
             "new_feedbacktel": feedback_tel,
             "new_userprofile_code": userprofile_code,
             "new_memo": memo,
+            "gcappOrderId": str(uuid.uuid4())[:8].upper(),
             "new_source": source,
         }
         optional_fields = {

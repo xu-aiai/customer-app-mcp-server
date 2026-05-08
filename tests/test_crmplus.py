@@ -54,6 +54,34 @@ class CRMPlusClientConfigTest(unittest.TestCase):
         self.assertEqual(client.app_id, "explicit-app")
         self.assertEqual(client.app_secret, "explicit-secret")
 
+    def test_create_work_order_sends_gcapp_order_id(self):
+        client = CRMPlusClient(
+            base_url="https://config-crmplus.example.com",
+            app_id="config-app",
+            app_secret="config-secret",
+        )
+
+        with patch.object(client, "_headers", return_value={}), patch.object(
+            client,
+            "_post_json",
+            return_value={"ErrorCode": 0, "Data": {"new_code": "WO-1"}},
+        ) as post_json, patch(
+            "clients.crmplus.uuid.uuid4",
+            return_value="abcdef12-3456-7890-abcd-ef1234567890",
+        ):
+            result = client.create_repair_order(
+                contact="张三",
+                feedback_tel="13800138000",
+                userprofile_code="XUGY215LCRKA00005",
+                memo="发动机无法启动",
+            )
+
+        self.assertEqual(result, {"new_code": "WO-1"})
+        payload = post_json.call_args.args[1]
+        self.assertEqual(payload["gcappOrderId"], "ABCDEF12")
+        self.assertEqual(payload["new_type"], 0)
+        self.assertEqual(payload["new_source"], 7)
+
 
 if __name__ == "__main__":
     unittest.main()
