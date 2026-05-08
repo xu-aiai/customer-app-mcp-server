@@ -16,6 +16,10 @@ from tools.customer_app_tools import (
     query_work_hours_statistic_info_by_vehicle_tool,
 )
 from tools.calculator_tools import calculate_expression
+from tools.fault_repair_tools import (
+    prepare_fault_repair_tool,
+    submit_fault_repair_order_tool,
+)
 from clients.customer_app_auth import fetch_customer_app_token
 
 logger = logging.getLogger('MCPServer')
@@ -386,6 +390,82 @@ def query_core_info(
         token=token,
         language=language,
         base_url=base_url,
+    )
+
+
+@mcp.tool()
+def prepare_fault_repair(
+    user_message: Optional[str] = None,
+    conversation_history: Optional[list] = None,
+    session_state: Optional[dict] = None,
+    vincode: Optional[str] = None,
+    fault_description: Optional[str] = None,
+    new_contact: Optional[str] = None,
+    new_feedbacktel: Optional[str] = None,
+    xcmg_app_token: Optional[str] = None,
+    platform_type: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """准备故障报修信息，不直接创建 CRM 工单。
+
+    适用问题：
+    - 用户要新报修，需要抽取/补齐整机编码、故障描述、现场联系人和电话。
+    - 没有整机编码时，返回用户绑定设备列表供选择。
+    - 信息齐全时，返回 submitWorkorder payload 供确认提交。
+
+    必填信息：
+    - vincode/deviceVin: 整机编码。
+    - fault_description/faultDescription: 故障描述。
+    - new_contact/contactName: 现场联系人姓名。
+    - new_feedbacktel/contactPhone: 现场联系人电话。
+
+    注意：本工具只生成待提交参数，不会调用 CRM+ 创建工单。
+    """
+    return prepare_fault_repair_tool(
+        user_message=user_message,
+        conversation_history=conversation_history,
+        session_state=session_state,
+        vincode=vincode,
+        fault_description=fault_description,
+        new_contact=new_contact,
+        new_feedbacktel=new_feedbacktel,
+        xcmg_app_token=xcmg_app_token,
+        platform_type=platform_type,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def submit_fault_repair_order(
+    payload: Optional[dict] = None,
+    device_vin: Optional[str] = None,
+    fault_description: Optional[str] = None,
+    contact_name: Optional[str] = None,
+    contact_phone: Optional[str] = None,
+    detail_address: Optional[str] = None,
+    source: int = 7,
+) -> dict:
+    """确认后创建 CRM+ 维修服务单。
+
+    适用问题：
+    - 用户已确认 prepare_fault_repair 返回的 submitWorkorder payload。
+    - 需要真正调用 CRM+ /api/service/CreateWorkOrder 创建维修工单。
+
+    可直接传入 prepare_fault_repair 的 submit_payload，也可传入拆分字段。
+    CRM+ 配置来自环境变量 CRMPLUS_BASE_URL、CRMPLUS_APP_ID、CRMPLUS_APP_SECRET。
+    """
+    return submit_fault_repair_order_tool(
+        payload=payload,
+        device_vin=device_vin,
+        fault_description=fault_description,
+        contact_name=contact_name,
+        contact_phone=contact_phone,
+        detail_address=detail_address,
+        source=source,
     )
 
 # Start the server

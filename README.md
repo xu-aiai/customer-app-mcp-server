@@ -15,6 +15,7 @@ MCP（模型上下文协议）是一个允许服务器向语言模型暴露可�
 - Vehicle and device lookup by vincode | 按设备编码/车架号查询车辆设备
 - Work-hour statistics and daily details | 工时汇总和按日明细查询
 - Trace, condition, fault, and maintenance queries | 轨迹、工况、故障、维保查询
+- Fault repair preparation and CRM+ repair order submission | 故障报修信息准备与 CRM+ 维修工单提交
 - WebSocket bridge for Xiaozhi MCP endpoint | 对接小智 MCP 接入点的 WebSocket 管道
 
 ## Quick Start | 快速开始
@@ -77,6 +78,33 @@ Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough
 
 ```bash
 conda run -n xiaozhi python scripts/fetch_customer_app_token.py
+```
+
+## Fault Repair Tools | 故障报修工具
+
+故障报修拆分为两个 MCP tools：
+
+- `prepare_fault_repair`: 负责报修信息准备，不创建 CRM 工单。它会合并已抽取字段和会话状态；缺少整机编码时查询绑定设备列表；有整机编码时查询设备详情；信息齐全后返回 `submitWorkorder` payload。
+- `submit_fault_repair_order`: 用户确认后调用 CRM+ 创建维修服务单。可直接传入 `prepare_fault_repair` 返回的 `submit_payload`，也可传入拆分字段。
+
+`submit_fault_repair_order` 需要以下环境变量：
+
+```bash
+CRMPLUS_BASE_URL=...
+CRMPLUS_APP_ID=...
+CRMPLUS_APP_SECRET=...
+```
+
+核心字段映射：
+
+```json
+{
+  "deviceVin": "new_userprofile_code",
+  "faultDescription": "new_memo",
+  "contactName": "new_contact",
+  "contactPhone": "new_feedbacktel",
+  "detailAddress": "new_address"
+}
 ```
 
 ## Config-driven Servers | 通过配置驱动的服务
