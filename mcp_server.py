@@ -482,7 +482,8 @@ def submit_fault_repair_order(
     - 需要真正调用 CRM+ /api/service/CreateWorkOrder 创建维修工单。
 
     可直接传入 prepare_fault_repair 的 submit_payload，也可传入拆分字段。
-    CRM+ 配置来自环境变量 CRMPLUS_BASE_URL、CRMPLUS_APP_ID、CRMPLUS_APP_SECRET。
+    CRM+ 配置来自 config/customer_app_config.json 的 crmplus_base_url、
+    crmplus_app_id、crmplus_app_secret。
     """
     return submit_fault_repair_order_tool(
         payload=payload,

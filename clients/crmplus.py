@@ -1,16 +1,12 @@
 import json
-import os
 import time
 from json import JSONDecodeError
 from typing import Any, Dict, Optional
 from urllib import error, parse, request
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from clients.customer_app_config import get_config_value
 
 REQUEST_TIMEOUT_SECONDS = 30
-DEFAULT_CRMPLUS_BASE_URL = "http://10.188.4.118:8089"
 
 
 class CRMPlusClient:
@@ -24,11 +20,16 @@ class CRMPlusClient:
         timeout: int = REQUEST_TIMEOUT_SECONDS,
     ) -> None:
         self.base_url = (
-            base_url or os.getenv("CRMPLUS_BASE_URL") or DEFAULT_CRMPLUS_BASE_URL
+            base_url
+            or get_config_value("crmplus_base_url", "")
         ).rstrip("/")
-        self.app_id = app_id if app_id is not None else os.getenv("CRMPLUS_APP_ID", "")
+        self.app_id = (
+            app_id if app_id is not None else get_config_value("crmplus_app_id", "")
+        )
         self.app_secret = (
-            app_secret if app_secret is not None else os.getenv("CRMPLUS_APP_SECRET", "")
+            app_secret
+            if app_secret is not None
+            else get_config_value("crmplus_app_secret", "")
         )
         self.timeout = timeout
         self._access_token: Optional[str] = None
@@ -175,13 +176,16 @@ class CRMPlusClient:
     def _require_config(self) -> None:
         missing = []
         if not self.base_url:
-            missing.append("CRMPLUS_BASE_URL")
+            missing.append("crmplus_base_url")
         if not self.app_id:
-            missing.append("CRMPLUS_APP_ID")
+            missing.append("crmplus_app_id")
         if not self.app_secret:
-            missing.append("CRMPLUS_APP_SECRET")
+            missing.append("crmplus_app_secret")
         if missing:
-            raise ValueError(f"Missing CRM+ config: {', '.join(missing)}")
+            raise ValueError(
+                "Missing CRM+ config in config/customer_app_config.json: "
+                + ", ".join(missing)
+            )
 
 
 def create_repair_order(

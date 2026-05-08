@@ -2,6 +2,9 @@
   "api_base_url": "http://10.90.21.125:9085/business",
   "service_order_base_url": "http://10.90.21.125:9085",
   "service_base_url": "http://10.90.21.125:9085/ixcmg",
+  "crmplus_base_url": "https://app-crmplus-uat.xcmg.com",
+  "crmplus_app_id": "",
+  "crmplus_app_secret": "",
   "auth_base_url": "http://10.90.21.125:9085/auth",
   "language": "zh-CN",
   "auth": {

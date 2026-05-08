@@ -108,12 +108,14 @@ conda run -n customer-app-mcp-server python scripts/fetch_customer_app_token.py
 - `prepare_fault_repair`: 负责报修信息准备，不创建 CRM 工单。它会合并已抽取字段和会话状态；缺少整机编码时查询绑定设备列表；有整机编码时查询设备详情；信息齐全后返回 `submitWorkorder` payload。返回结果包含可直接播报的 `response` 字段，设备列表支持按“第几辆”选择并映射到真实 `vincode`。
 - `submit_fault_repair_order`: 用户确认后调用 CRM+ 创建维修服务单。可直接传入 `prepare_fault_repair` 返回的 `submit_payload`，也可传入拆分字段。
 
-`submit_fault_repair_order` 需要以下环境变量：
+`submit_fault_repair_order` 的 CRM+ 配置从 `config/customer_app_config.json` 读取：
 
-```bash
-CRMPLUS_BASE_URL=...
-CRMPLUS_APP_ID=...
-CRMPLUS_APP_SECRET=...
+```json
+{
+  "crmplus_base_url": "https://app-crmplus-uat.xcmg.com",
+  "crmplus_app_id": "...",
+  "crmplus_app_secret": "..."
+}
 ```
 
 核心字段映射：
