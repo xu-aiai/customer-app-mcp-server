@@ -1,5 +1,5 @@
 {
-  "mcpEndpoint": "ws://your-xiaozhi-host/mcp_endpoint/mcp/?token=your-token",
+  "mcpEndpoint": "ws://10.90.20.110:8004/mcp_endpoint/mcp/?token=GbEZe8dvh4LicK2Yd6QbTX0pWaUT%2BwfSabfurr0s1cs%3D",
   "mcpServers": {
     "customer-app-mcp-server": {
       "type": "stdio",
