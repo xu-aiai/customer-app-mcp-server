@@ -30,6 +30,10 @@ from tools.fault_repair_tools import (
     prepare_fault_repair_tool,
     submit_fault_repair_order_tool,
 )
+from tools.service_order_tools import (
+    get_service_order_detail_tool,
+    list_service_orders_tool,
+)
 from clients.customer_app_auth import fetch_customer_app_token
 from clients.customer_app_config import load_customer_app_config
 
@@ -492,6 +496,84 @@ def submit_fault_repair_order(
 
 
 @mcp.tool()
+def list_service_orders(
+    app_token: Optional[str] = None,
+    xcmg_app_token: Optional[str] = None,
+    vincode: Optional[str] = None,
+    page_num: int = 1,
+    page_size: int = 3,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+    service_base_url: Optional[str] = None,
+) -> dict:
+    """查询当前用户已有工单/服务单列表，默认返回最近 3 条。
+
+    适用问题：
+    - 我的工单到哪了。
+    - 服务单进度。
+    - 上次报修怎么样了。
+    - 最近的报修。
+    - 我提的工单状态。
+
+    API: GET /ixcmg/serviceOrderUnion/getPage
+    必填参数：
+    - app_token/xcmg_app_token: 客户 App 用户 token。
+    可选参数：
+    - vincode: 设备 VIN，存在时按设备过滤。
+    - page_num/page_size: 分页参数，默认 1/3。
+
+    返回压缩后的结构化 records，不做 LLM 总结。
+    """
+    return list_service_orders_tool(
+        app_token=app_token,
+        xcmg_app_token=xcmg_app_token,
+        vincode=vincode,
+        page_num=page_num,
+        page_size=page_size,
+        token=token,
+        language=language,
+        base_url=base_url,
+        service_base_url=service_base_url,
+    )
+
+
+@mcp.tool()
+def get_service_order_detail(
+    order_id: str,
+    app_token: Optional[str] = None,
+    xcmg_app_token: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+    service_base_url: Optional[str] = None,
+) -> dict:
+    """查询单条已有工单/服务单详情。
+
+    适用问题：
+    - 查工单 12345 的详情。
+    - 那条工单的具体情况。
+    - 查 CRM123456 的详情。
+
+    API: GET /ixcmg/serviceOrderUnion/{order_id}
+    必填参数：
+    - order_id: 工单 ID、CRM 编号或服务单编号。
+    - app_token/xcmg_app_token: 客户 App 用户 token。
+
+    返回压缩后的结构化 record，不做 LLM 总结。
+    """
+    return get_service_order_detail_tool(
+        order_id=order_id,
+        app_token=app_token,
+        xcmg_app_token=xcmg_app_token,
+        token=token,
+        language=language,
+        base_url=base_url,
+        service_base_url=service_base_url,
+    )
+
+
+@mcp.tool()
 def query_vehicle_by_vincode_v2(
     vincode: str,
     token: Optional[str] = None,
@@ -708,7 +790,7 @@ def call_service_order_union(
 ) -> dict:
     """调用保养&报修统一工单接口。
 
-    文档 base: http://10.90.21.125:9081/ixcmg
+    文档 base: http://10.90.21.125:9085/ixcmg
     endpoint 示例：getPage、add、getDevice、getDeviceSrvOrder、cancelSrvOrder，
     或完整 /serviceOrderUnion/add。
     """

@@ -13,8 +13,9 @@ from clients.customer_app_config import (
 logger = logging.getLogger("CustomerAppClient")
 
 REQUEST_TIMEOUT_SECONDS = 30
-DEFAULT_API_BASE_URL = "http://10.90.21.125:9081/business"
-DEFAULT_SERVICE_BASE_URL = "http://10.90.21.125:9081/ixcmg"
+DEFAULT_API_BASE_URL = "http://10.90.21.125:9085/business"
+DEFAULT_SERVICE_ORDER_BASE_URL = "http://10.90.21.125:9085"
+DEFAULT_SERVICE_BASE_URL = "http://10.90.21.125:9085/ixcmg"
 
 
 def build_request_headers(
@@ -57,8 +58,10 @@ class CustomerAppClient:
             or get_config_value("api_base_url")
             or DEFAULT_API_BASE_URL
         ).rstrip("/")
-        configured_service_base_url = service_base_url or get_config_value(
-            "service_base_url"
+        configured_service_base_url = (
+            service_base_url
+            or get_config_value("service_base_url")
+            or self._service_base_url_from_order_base_url()
         )
         if not configured_service_base_url and self.base_url.endswith("/business"):
             configured_service_base_url = f"{self.base_url[:-len('/business')]}/ixcmg"
@@ -66,6 +69,12 @@ class CustomerAppClient:
             configured_service_base_url or DEFAULT_SERVICE_BASE_URL
         ).rstrip("/")
         self.timeout = timeout
+
+    def _service_base_url_from_order_base_url(self) -> Optional[str]:
+        service_order_base_url = get_config_value("service_order_base_url")
+        if not service_order_base_url:
+            return None
+        return f"{service_order_base_url.rstrip('/')}/ixcmg"
 
     def query_vehicle_by_vincode(
         self,

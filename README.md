@@ -68,6 +68,7 @@ Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough
 客户 App 接口配置存放在 `config/customer_app_config.json`：
 
 - `api_base_url`: 业务接口 base URL
+- `service_order_base_url`: 工单接口 base URL，对应 `XCMG_SERVICE_ORDER_BASE_URL`
 - `service_base_url`: 保养&报修统一工单接口 base URL
 - `auth_base_url`: 登录接口 base URL
 - `language`: 请求语言
@@ -79,16 +80,17 @@ Apifox 开发环境默认地址：
 
 ```json
 {
-  "api_base_url": "http://10.90.21.125:9081/business",
-  "service_base_url": "http://10.90.21.125:9081/ixcmg",
-  "auth_base_url": "http://10.90.21.125:9081/auth"
+  "api_base_url": "http://10.90.21.125:9085/business",
+  "service_order_base_url": "http://10.90.21.125:9085",
+  "service_base_url": "http://10.90.21.125:9085/ixcmg",
+  "auth_base_url": "http://10.90.21.125:9085/auth"
 }
 ```
 
 登录 token 请求路径：
 
 ```text
-POST http://10.90.21.125:9081/auth/oauth/token
+POST http://10.90.21.125:9085/auth/oauth/token
 ```
 
 获取并写入 token：
@@ -125,6 +127,42 @@ CRMPLUS_APP_SECRET=...
   "detailAddress": "new_address"
 }
 ```
+
+## Service Order Tools | 工单查询工具
+
+已有工单/服务单查询拆分为两个 MCP tools：
+
+- `list_service_orders`: 查询当前用户最近工单列表，默认取最近 3 条。可传 `vincode` 按设备 VIN 过滤。
+- `get_service_order_detail`: 查询单条工单详情，传入 `order_id`。
+
+这两个工具用于“我的工单到哪了”“服务单进度”“上次报修怎么样了”“查工单详情”等查询已有工单的场景；新建报修仍使用 `prepare_fault_repair` / `submit_fault_repair_order`。
+
+接口路径：
+
+```text
+GET {service_order_base_url}/ixcmg/serviceOrderUnion/getPage
+GET {service_order_base_url}/ixcmg/serviceOrderUnion/{order_id}
+```
+
+默认完整接口路径：
+
+```text
+http://10.90.21.125:9085/ixcmg/serviceOrderUnion/getPage
+http://10.90.21.125:9085/ixcmg/serviceOrderUnion/{order_id}
+```
+
+入参示例：
+
+```json
+{
+  "app_token": "用户客户 App token",
+  "vincode": "可选设备 VIN",
+  "page_num": 1,
+  "page_size": 3
+}
+```
+
+工具只返回压缩后的结构化事实数据和中文枚举标签，不做 LLM 总结。
 
 ## Apifox API Coverage | Apifox 接口覆盖
 
