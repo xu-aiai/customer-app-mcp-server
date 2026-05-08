@@ -12,11 +12,16 @@ REQUIRED_FIELDS = [
     "new_feedbacktel",
 ]
 
+_ALNUM_VINCODE_RE = re.compile(r"^[A-Za-z0-9]{8,30}$")
+
 
 def _error(message: str, **extra: Any) -> dict:
     return {
         "success": False,
+        "action": extra.pop("action", "ask_missing_info"),
         "error": message,
+        "message": message,
+        "response": extra.pop("response", message),
         **extra,
     }
 
@@ -26,6 +31,7 @@ def _ok(action: str, message: str, **extra: Any) -> dict:
         "success": True,
         "action": action,
         "message": message,
+        "response": extra.pop("response", message),
         **extra,
     }
 
@@ -48,9 +54,6 @@ def _merge_state(
     for key, value in parsed.items():
         if value:
             state[key] = value
-    selected_vincode = _resolve_selected_vincode(user_message or "", state.get("devices"))
-    if selected_vincode:
-        state["vincode"] = selected_vincode
     explicit = {
         "vincode": vincode,
         "fault_description": fault_description,
@@ -63,6 +66,9 @@ def _merge_state(
             state[key] = value
     for key in REQUIRED_FIELDS:
         state[key] = _text(state.get(key))
+    selected_vincode = _resolve_selected_vincode(user_message or "", state.get("devices"))
+    if selected_vincode:
+        state["vincode"] = selected_vincode
     return state
 
 
@@ -147,34 +153,144 @@ def _infer_fault_description(message: str) -> str:
 def _resolve_selected_vincode(message: str, devices: Optional[Any]) -> str:
     if not isinstance(devices, list) or not devices:
         return ""
-    text = message.strip()
+    text = _text(message)
     if not text:
         return ""
 
-    selected_index: Optional[int] = None
-    ordinal_patterns = [
-        (r"第\s*(一|1)|(?:一|1)\s*(?:台|辆|个|条|号)", 0),
-        (r"第\s*(二|2)|(?:二|2)\s*(?:台|辆|个|条|号)", 1),
-        (r"第\s*(三|3)|(?:三|3)\s*(?:台|辆|个|条|号)", 2),
-    ]
-    for pattern, index in ordinal_patterns:
-        if re.search(pattern, text):
-            selected_index = index
-            break
-    if selected_index is None and re.search(r"这台|那台|这个|那个", text):
-        selected_index = 0 if len(devices) == 1 else None
-    if selected_index is None or selected_index >= len(devices):
-        return ""
+    selected_index = _parse_device_index(text, len(devices))
+    if selected_index is not None:
+        device = devices[selected_index]
+        if isinstance(device, dict):
+            return _device_vincode(device)
 
-    device = devices[selected_index]
-    if not isinstance(device, dict):
-        return ""
+    return _match_device_from_text(text, devices)
+
+
+def _parse_device_index(message: str, device_count: int) -> Optional[int]:
+    text = message.strip()
+    if not text:
+        return None
+
+    if device_count == 1 and re.search(r"这台|那台|这个|那个|它", text):
+        return 0
+
+    patterns = [
+        r"第\s*(?P<num>[0-9]{1,2}|[零一二三四五六七八九十两]+)\s*(?:台|辆|个|条|号|辆车|台车|个车)?",
+        r"(?<!\d)(?P<num>[0-9]{1,2}|[零一二三四五六七八九十两]+)\s*(?:台|辆|个|条|号|辆车|台车|个车)(?!\w)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if not match:
+            continue
+        index = _parse_ordinal_number(match.group("num"))
+        if index is None:
+            continue
+        zero_based = index - 1
+        if 0 <= zero_based < device_count:
+            return zero_based
+    return None
+
+
+def _parse_ordinal_number(value: str) -> Optional[int]:
+    cleaned = _text(value)
+    if not cleaned:
+        return None
+    if cleaned.isdigit():
+        return int(cleaned)
+    numerals = {
+        "零": 0,
+        "一": 1,
+        "二": 2,
+        "两": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+    }
+    if cleaned == "十":
+        return 10
+    if len(cleaned) == 1:
+        return numerals.get(cleaned)
+    if cleaned.startswith("十"):
+        tail = numerals.get(cleaned[1:])
+        return 10 + (tail or 0) if tail is not None else 10
+    if cleaned.endswith("十") and len(cleaned) == 2:
+        head = numerals.get(cleaned[0])
+        return (head or 1) * 10 if head is not None else None
+    if "十" in cleaned:
+        head, tail = cleaned.split("十", 1)
+        head_value = numerals.get(head) if head else 1
+        tail_value = numerals.get(tail) if tail else 0
+        if head_value is None or tail_value is None:
+            return None
+        return head_value * 10 + tail_value
+    return None
+
+
+def _normalize_alnum(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", _text(value)).upper()
+
+
+def _device_vincode(device: dict) -> str:
     return _text(
         device.get("vincode")
         or device.get("deviceVin")
         or device.get("VIN")
         or device.get("vin")
     )
+
+
+def _device_search_text(device: dict) -> str:
+    parts = [
+        _device_vincode(device),
+        _text(device.get("deviceId") or device.get("id") or device.get("vehicleId")),
+        _text(device.get("deviceName")),
+        _text(device.get("deviceModel")),
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def _match_device_from_text(message: str, devices: Sequence[dict]) -> str:
+    text = _text(message)
+    if not text:
+        return ""
+
+    normalized_text = _normalize_alnum(text)
+    if len(normalized_text) < 5 and not re.search(r"[\u4e00-\u9fa5]", text):
+        return ""
+
+    if len(normalized_text) >= 5:
+        for device in devices:
+            if not isinstance(device, dict):
+                continue
+            vincode = _device_vincode(device)
+            if not vincode:
+                continue
+            normalized_vincode = _normalize_alnum(vincode)
+            if normalized_vincode and (
+                normalized_text == normalized_vincode
+                or normalized_text in normalized_vincode
+                or normalized_vincode in normalized_text
+            ):
+                return vincode
+
+    if re.search(r"[\u4e00-\u9fa5]", text):
+        for device in devices:
+            if not isinstance(device, dict):
+                continue
+            search_text = _device_search_text(device)
+            if search_text and text == search_text:
+                return _device_vincode(device)
+            if search_text and text in search_text:
+                return _device_vincode(device)
+    return ""
+
+
+def _is_probable_vincode(value: str) -> bool:
+    return bool(_ALNUM_VINCODE_RE.fullmatch(_normalize_alnum(value)))
 
 
 def _missing_fields(state: dict) -> List[str]:
@@ -256,6 +372,46 @@ def _device_summary(device: dict) -> dict:
     }
 
 
+def _enrich_devices(devices: List[dict]) -> List[dict]:
+    enriched: List[dict] = []
+    for index, device in enumerate(devices, start=1):
+        item = dict(device)
+        item["index"] = index
+        item["label"] = f"第{index}辆"
+        enriched.append(item)
+    return enriched
+
+
+def _voice_select_device_message(devices: Sequence[dict]) -> str:
+    return f"你名下有{len(devices)}台设备，请说第几辆，或者直接说设备编码。"
+
+
+def _validate_or_resolve_vincode(state: dict) -> tuple[str, Optional[dict]]:
+    vincode = _text(state.get("vincode"))
+    devices = state.get("devices")
+    if not vincode:
+        return "", None
+    if isinstance(devices, list) and devices:
+        matched = _match_device_from_text(vincode, devices)
+        if matched:
+            return matched, None
+        if re.search(r"[\u4e00-\u9fa5]", vincode) or not _is_probable_vincode(vincode):
+            return "", {
+                "action": "ask_missing_info",
+                "message": "没找到这台设备，请说第几辆或完整设备编码。",
+            }
+        return "", {
+            "action": "ask_missing_info",
+            "message": "没找到这台设备，请说第几辆或完整设备编码。",
+        }
+    if not _is_probable_vincode(vincode):
+        return "", {
+            "action": "ask_missing_info",
+            "message": "设备编码格式不正确，请说完整设备编码。",
+        }
+    return vincode, None
+
+
 def _build_submit_payload(state: dict, profile: dict) -> dict:
     model_type = profile.get("modelType")
     product_type = profile.get("productType")
@@ -325,8 +481,19 @@ def prepare_fault_repair_tool(
 
     try:
         client = CustomerAppClient(base_url=base_url)
-    except Exception as exc:
-        return _error(str(exc), state=state)
+    except Exception:
+        return _error("暂时无法初始化设备服务，请稍后再试。", state=state)
+
+    resolved_vincode, validation_error = _validate_or_resolve_vincode(state)
+    if validation_error:
+        state["vincode"] = ""
+        return _error(
+            validation_error["message"],
+            action=validation_error["action"],
+            state=state,
+        )
+    if resolved_vincode:
+        state["vincode"] = resolved_vincode
 
     if not state["vincode"]:
         try:
@@ -336,19 +503,30 @@ def prepare_fault_repair_tool(
                 current=1,
                 size=20,
             )
-        except ValueError as exc:
-            return _error(str(exc), state=state)
+        except ValueError:
+            return _error("暂时获取不到设备列表，请稍后再试。", state=state)
         if _api_failed(response_data):
-            return _error("获取设备列表失败。", detail=response_data, state=state)
+            return _error(
+                "暂时获取不到设备列表，请稍后再试。",
+                state=state,
+            )
 
-        devices = [_device_summary(device) for device in _extract_devices(response_data)]
+        devices = _enrich_devices(
+            [_device_summary(device) for device in _extract_devices(response_data)]
+        )
         devices = [device for device in devices if device.get("vincode")]
         state["devices"] = devices
         if not devices:
-            return _ok("no_device", "您当前暂无绑定设备，无法进行故障报修。", state=state)
+            return _ok(
+                "no_device",
+                "您当前暂无绑定设备，无法进行故障报修。",
+                response="你当前没有可报修的设备。",
+                state=state,
+            )
         return _ok(
             "select_device",
-            "请选择需要故障报修的设备。",
+            _voice_select_device_message(devices),
+            response=_voice_select_device_message(devices),
             devices=devices,
             state=state,
         )
@@ -359,10 +537,13 @@ def prepare_fault_repair_tool(
             token=resolved_token,
             language=language,
         )
-    except ValueError as exc:
-        return _error(str(exc), state=state)
+    except ValueError:
+        return _error("设备编码不正确，请说第几辆或完整设备编码。", state=state)
     if _api_failed(detail_result):
-        return _error("获取设备详情失败，无法进行故障报修。", detail=detail_result, state=state)
+        return _error(
+            "没找到这台设备，请说第几辆或完整设备编码。",
+            state=state,
+        )
 
     profile = _pick_vehicle_profile(detail_result)
     state.update(
