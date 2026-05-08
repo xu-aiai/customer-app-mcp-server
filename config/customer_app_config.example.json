@@ -1,12 +1,12 @@
 {
-  "api_base_url": "http://10.90.21.125:9081/business",
-  "service_base_url": "http://10.90.21.125:9081/ixcmg",
-  "auth_base_url": "http://10.90.21.125:9081/auth",
+  "api_base_url": "http://10.90.21.125:9085/business",
+  "service_base_url": "http://10.90.21.125:9085/ixcmg",
+  "auth_base_url": "http://10.90.21.125:9085/auth",
   "language": "zh-CN",
   "auth": {
-    "authorization": "Basic your-basic-authorization",
-    "username": "your-username",
-    "password": "your-password",
+    "authorization": "Basic cGlnOnBpZw==",
+    "username": "aixiaoxu",
+    "password": "Cloudai@0409",
     "scope": "server",
     "grant_type": "password"
   },
