@@ -4,16 +4,26 @@ import sys
 import logging
 from typing import Optional
 from tools.customer_app_tools import (
+    call_service_order_union_tool,
     get_customer_condition_tool,
     get_worktime_calendar_list_from_doris_tool,
+    get_worktime_calendar_list_from_doris_v2_tool,
     query_core_info_tool,
+    query_core_info_v2_tool,
     query_customer_vehicle_page_tool,
+    query_customer_vehicle_page_v2_tool,
     query_device_fault_page_tool,
+    query_device_fault_page_v2_tool,
     query_planned_maintained_item_page_tool,
+    query_planned_maintained_item_page_v2_tool,
     query_trace_tool,
+    query_trace_v2_tool,
     query_vehicle_by_vincode_tool,
+    query_vehicle_by_vincode_v2_tool,
     query_work_hours_page_new_by_date_tool,
+    query_work_hours_page_new_by_date_v2_tool,
     query_work_hours_statistic_info_by_vehicle_tool,
+    query_work_hours_statistic_info_by_vehicle_v2_tool,
 )
 from tools.calculator_tools import calculate_expression
 from tools.fault_repair_tools import (
@@ -21,6 +31,7 @@ from tools.fault_repair_tools import (
     submit_fault_repair_order_tool,
 )
 from clients.customer_app_auth import fetch_customer_app_token
+from clients.customer_app_config import load_customer_app_config
 
 logger = logging.getLogger('MCPServer')
 
@@ -36,6 +47,17 @@ mcp = FastMCP("CustomerAppMCP")
 def refresh_customer_app_token_on_startup() -> None:
     """Fetch customer app token on server startup and persist it to config."""
     try:
+        config = load_customer_app_config()
+        auth_config = config.get("auth") or {}
+        required_values = [
+            config.get("auth_base_url"),
+            auth_config.get("authorization"),
+            auth_config.get("username"),
+            auth_config.get("password"),
+        ]
+        if not all(required_values):
+            logger.info("Skip customer app token refresh: auth config is incomplete.")
+            return
         fetch_customer_app_token()
     except Exception as exc:
         logger.warning("Failed to refresh customer app token on startup: %s", exc)
@@ -466,6 +488,239 @@ def submit_fault_repair_order(
         contact_phone=contact_phone,
         detail_address=detail_address,
         source=source,
+    )
+
+
+@mcp.tool()
+def query_vehicle_by_vincode_v2(
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """通过 vincode 查询车辆详情 v2。API: GET /apiForAi/v2/customerVehicle/{vincode}。"""
+    return query_vehicle_by_vincode_v2_tool(
+        vincode=vincode,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_work_hours_statistic_info_by_vehicle_v2(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """按车统计运行时间汇总信息 v2。API: POST /apiForAi/v2/queryWorkHoursStatisticInfoByVehicle。"""
+    return query_work_hours_statistic_info_by_vehicle_v2_tool(
+        begin_date=begin_date,
+        end_date=end_date,
+        vincode=vincode,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_planned_maintained_item_page_v2(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    begin_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    vincode: Optional[str] = None,
+    item_name: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """计划维保分页查询 v2。API: GET /apiForAi/v2/queryPlannedMaintainedItemPage。"""
+    return query_planned_maintained_item_page_v2_tool(
+        total=total,
+        size=size,
+        current=current,
+        begin_date=begin_date,
+        end_date=end_date,
+        vincode=vincode,
+        item_name=item_name,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_work_hours_page_new_by_date_v2(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    order_asc: Optional[int] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """按车按日期分页查询运行时间明细 v2。API: GET /apiForAi/v2/queryWorkHoursPageNewByDate。"""
+    return query_work_hours_page_new_by_date_v2_tool(
+        begin_date=begin_date,
+        end_date=end_date,
+        vincode=vincode,
+        total=total,
+        size=size,
+        current=current,
+        order_asc=order_asc,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def get_worktime_calendar_list_from_doris_v2(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """查询客户端设备工作日历列表 v2。API: GET /apiForAi/v2/getWorktimeCalendarListFromDoris。"""
+    return get_worktime_calendar_list_from_doris_v2_tool(
+        begin_date=begin_date,
+        end_date=end_date,
+        vincode=vincode,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_trace_v2(
+    begin_time: str,
+    end_time: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """设备轨迹查询 v2。API: GET /apiForAi/v2/trace。"""
+    return query_trace_v2_tool(
+        begin_time=begin_time,
+        end_time=end_time,
+        vincode=vincode,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_customer_vehicle_page_v2(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vehicle_id: Optional[int] = None,
+    search_key: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """客户设备列表分页查询 v2。API: GET /apiForAi/v2/customerVehiclePage。"""
+    return query_customer_vehicle_page_v2_tool(
+        total=total,
+        size=size,
+        current=current,
+        vehicle_id=vehicle_id,
+        search_key=search_key,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_device_fault_page_v2(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vincode: Optional[str] = None,
+    faultcode: Optional[str] = None,
+    starttime: Optional[str] = None,
+    endtime: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """故障告警分页查询 v2。API: GET /apiForAi/v2/deviceFaultPage。"""
+    return query_device_fault_page_v2_tool(
+        total=total,
+        size=size,
+        current=current,
+        vincode=vincode,
+        faultcode=faultcode,
+        starttime=starttime,
+        endtime=endtime,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_core_info_v2(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """查询核心统计信息（通用）v2。API: POST /apiForAi/v2/queryCoreInfo。"""
+    return query_core_info_v2_tool(
+        begin_date=begin_date,
+        end_date=end_date,
+        vincode=vincode,
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def call_service_order_union(
+    endpoint: str,
+    method: str = "POST",
+    params: Optional[dict] = None,
+    payload: Optional[dict] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+    service_base_url: Optional[str] = None,
+) -> dict:
+    """调用保养&报修统一工单接口。
+
+    文档 base: http://10.90.21.125:9081/ixcmg
+    endpoint 示例：getPage、add、getDevice、getDeviceSrvOrder、cancelSrvOrder，
+    或完整 /serviceOrderUnion/add。
+    """
+    return call_service_order_union_tool(
+        endpoint=endpoint,
+        method=method,
+        params=params,
+        payload=payload,
+        token=token,
+        language=language,
+        base_url=base_url,
+        service_base_url=service_base_url,
     )
 
 # Start the server

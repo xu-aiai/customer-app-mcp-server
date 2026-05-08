@@ -55,6 +55,26 @@ def query_vehicle_by_vincode_tool(
     return _wrap_response(response_data)
 
 
+def query_vehicle_by_vincode_v2_tool(
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = _require(vincode, "vincode")
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).query_vehicle_by_vincode_v2(
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
 def query_work_hours_statistic_info_by_vehicle_tool(
     begin_date: str,
     end_date: str,
@@ -89,6 +109,34 @@ def query_work_hours_statistic_info_by_vehicle_tool(
     return _wrap_response(response_data)
 
 
+def query_work_hours_statistic_info_by_vehicle_v2_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle_v2(
+            begin_date=begin_date,
+            end_date=end_date,
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
 def query_planned_maintained_item_page_tool(
     total: Optional[int] = None,
     size: Optional[int] = None,
@@ -108,6 +156,35 @@ def query_planned_maintained_item_page_tool(
     """
     try:
         response_data = _client(base_url).query_planned_maintained_item_page(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+            itemName=item_name,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_planned_maintained_item_page_v2_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    begin_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    vincode: Optional[str] = None,
+    item_name: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    try:
+        response_data = _client(base_url).query_planned_maintained_item_page_v2(
             token=token,
             language=language,
             total=total,
@@ -190,6 +267,42 @@ def query_work_hours_page_new_by_date_tool(
     return _wrap_response(response_data)
 
 
+def query_work_hours_page_new_by_date_v2_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    order_asc: Optional[int] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).query_work_hours_page_new_by_date_v2(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+            orderAsc=order_asc,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
 def get_worktime_calendar_list_from_doris_tool(
     begin_date: str,
     end_date: str,
@@ -213,6 +326,34 @@ def get_worktime_calendar_list_from_doris_tool(
 
     try:
         response_data = _client(base_url).get_worktime_calendar_list_from_doris(
+            token=token,
+            language=language,
+            beginDate=begin_date,
+            endDate=end_date,
+            vincode=vincode,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def get_worktime_calendar_list_from_doris_v2_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).get_worktime_calendar_list_from_doris_v2(
             token=token,
             language=language,
             beginDate=begin_date,
@@ -258,6 +399,34 @@ def query_trace_tool(
     return _wrap_response(response_data)
 
 
+def query_trace_v2_tool(
+    begin_time: str,
+    end_time: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = (
+        _require(begin_time, "begin_time")
+        or _require(end_time, "end_time")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).query_trace_v2(
+            token=token,
+            language=language,
+            beginTime=begin_time,
+            endTime=end_time,
+            vincode=vincode,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
 def query_customer_vehicle_page_tool(
     total: Optional[int] = None,
     size: Optional[int] = None,
@@ -275,6 +444,31 @@ def query_customer_vehicle_page_tool(
     """
     try:
         response_data = _client(base_url).query_customer_vehicle_page(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            id=vehicle_id,
+            searchKey=search_key,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_customer_vehicle_page_v2_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vehicle_id: Optional[int] = None,
+    search_key: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    try:
+        response_data = _client(base_url).query_customer_vehicle_page_v2(
             token=token,
             language=language,
             total=total,
@@ -322,6 +516,35 @@ def query_device_fault_page_tool(
     return _wrap_response(response_data)
 
 
+def query_device_fault_page_v2_tool(
+    total: Optional[int] = None,
+    size: Optional[int] = None,
+    current: Optional[int] = None,
+    vincode: Optional[str] = None,
+    faultcode: Optional[str] = None,
+    starttime: Optional[str] = None,
+    endtime: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    try:
+        response_data = _client(base_url).query_device_fault_page_v2(
+            token=token,
+            language=language,
+            total=total,
+            size=size,
+            current=current,
+            vincode=vincode,
+            faultcode=faultcode,
+            starttime=starttime,
+            endtime=endtime,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
 def query_core_info_tool(
     begin_date: str,
     end_date: str,
@@ -350,6 +573,69 @@ def query_core_info_tool(
             vincode=vincode,
             token=token,
             language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_core_info_v2_tool(
+    begin_date: str,
+    end_date: str,
+    vincode: str,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = (
+        _require(begin_date, "begin_date")
+        or _require(end_date, "end_date")
+        or _require(vincode, "vincode")
+    )
+    if validation_error:
+        return validation_error
+    try:
+        response_data = _client(base_url).query_core_info_v2(
+            begin_date=begin_date,
+            end_date=end_date,
+            vincode=vincode,
+            token=token,
+            language=language,
+        )
+    except ValueError as exc:
+        return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def call_service_order_union_tool(
+    endpoint: str,
+    method: str = "POST",
+    params: Optional[dict] = None,
+    payload: Optional[dict] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+    service_base_url: Optional[str] = None,
+) -> dict:
+    """调用保养&报修统一工单接口.
+
+    endpoint 示例：getPage、add、getDevice、cancelSrvOrder，或完整
+    /serviceOrderUnion/add。
+    """
+    validation_error = _require(endpoint, "endpoint")
+    if validation_error:
+        return validation_error
+    try:
+        response_data = CustomerAppClient(
+            base_url=base_url,
+            service_base_url=service_base_url,
+        ).call_service_order_union(
+            endpoint=endpoint,
+            method=method,
+            token=token,
+            language=language,
+            params=params,
+            payload=payload,
         )
     except ValueError as exc:
         return _error(str(exc))

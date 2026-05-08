@@ -68,17 +68,36 @@ Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough
 客户 App 接口配置存放在 `config/customer_app_config.json`：
 
 - `api_base_url`: 业务接口 base URL
+- `service_base_url`: 保养&报修统一工单接口 base URL
 - `auth_base_url`: 登录接口 base URL
 - `language`: 请求语言
 - `auth.username` / `auth.password`: 获取登录 token 所需账号密码
 - `auth.authorization`: 获取登录 token 所需 Basic Authorization
 - `token`: 业务接口使用的 Bearer token
 
+Apifox 开发环境默认地址：
+
+```json
+{
+  "api_base_url": "http://10.90.21.125:9081/business",
+  "service_base_url": "http://10.90.21.125:9081/ixcmg",
+  "auth_base_url": "http://10.90.21.125:9081/auth"
+}
+```
+
+登录 token 请求路径：
+
+```text
+POST http://10.90.21.125:9081/auth/oauth/token
+```
+
 获取并写入 token：
 
 ```bash
 conda run -n customer-app-mcp-server python scripts/fetch_customer_app_token.py
 ```
+
+服务启动时会在鉴权配置完整的情况下自动获取客户 App token，并写回 `config/customer_app_config.json` 的 `token` 字段。调用业务接口时，如果返回 401/403 或 token 失效类错误，客户端会自动重新获取 token、写回配置文件，并用新 token 重试本次业务请求一次。
 
 ## Fault Repair Tools | 故障报修工具
 
@@ -106,6 +125,25 @@ CRMPLUS_APP_SECRET=...
   "detailAddress": "new_address"
 }
 ```
+
+## Apifox API Coverage | Apifox 接口覆盖
+
+MCP 已覆盖 Apifox 文档中的 AI 团队接口 v1/v2：
+
+- `/apiForAi/*`
+- `/apiForAi/v2/*`
+
+保养&报修统一工单接口通过通用工具 `call_service_order_union` 调用：
+
+```json
+{
+  "endpoint": "add",
+  "method": "POST",
+  "payload": {}
+}
+```
+
+`endpoint` 可以传 `getPage`、`listByUser`、`homePage`、`add`、`getDevice`、`getDeviceSrvOrder`、`getAllDeviceSrvOrder` 等，也可以传完整路径 `/serviceOrderUnion/add`。
 
 ## Config-driven Servers | 通过配置驱动的服务
 

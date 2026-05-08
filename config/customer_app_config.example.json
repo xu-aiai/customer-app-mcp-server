@@ -1,6 +1,7 @@
 {
-  "api_base_url": "https://your-api-host/business",
-  "auth_base_url": "https://your-api-host/auth",
+  "api_base_url": "http://10.90.21.125:9081/business",
+  "service_base_url": "http://10.90.21.125:9081/ixcmg",
+  "auth_base_url": "http://10.90.21.125:9081/auth",
   "language": "zh-CN",
   "auth": {
     "authorization": "Basic your-basic-authorization",

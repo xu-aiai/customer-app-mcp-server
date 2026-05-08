@@ -7,6 +7,8 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "customer_app_config.json"
 
 
 def load_customer_app_config() -> dict:
+    if not CONFIG_PATH.exists():
+        return {}
     with CONFIG_PATH.open("r", encoding="utf-8") as config_file:
         return json.load(config_file)
 
