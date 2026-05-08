@@ -33,7 +33,7 @@ Edit `mcp_config.json` and replace `mcpEndpoint` with the MCP endpoint copied fr
 
 3. Run the MCP pipe | 启动 MCP 管道:
 ```bash
-conda run --no-capture-output -n xiaozhi python mcp_pipe.py
+conda run --no-capture-output -n customer-app-mcp-server python mcp_pipe.py
 ```
 
 The command above starts all enabled servers in `mcp_config.json`. `--no-capture-output` keeps logs visible while the process is running.
@@ -44,7 +44,7 @@ You can also run the server script directly:
 
 也可以直接指定服务脚本启动：
 ```bash
-conda run --no-capture-output -n xiaozhi python mcp_pipe.py mcp_server.py
+conda run --no-capture-output -n customer-app-mcp-server python mcp_pipe.py mcp_server.py
 ```
 
 Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough because `mcp_config.json` already defines the server command.
@@ -77,7 +77,7 @@ Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough
 获取并写入 token：
 
 ```bash
-conda run -n xiaozhi python scripts/fetch_customer_app_token.py
+conda run -n customer-app-mcp-server python scripts/fetch_customer_app_token.py
 ```
 
 ## Fault Repair Tools | 故障报修工具
