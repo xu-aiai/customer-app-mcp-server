@@ -24,6 +24,18 @@ def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     return load_customer_app_config().get(key, default)
 
 
+def get_nested_config_value(*keys: str, default=None):
+    config = load_customer_app_config()
+    current = config
+    for key in keys:
+        if not isinstance(current, dict):
+            return default
+        current = current.get(key)
+        if current is None:
+            return default
+    return current
+
+
 def get_customer_app_token() -> Optional[str]:
     token = load_customer_app_config().get("token")
     return token or None

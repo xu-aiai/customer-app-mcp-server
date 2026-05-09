@@ -13,6 +13,7 @@ MCP（模型上下文协议）是一个允许服务器向语言模型暴露可�
 ## Features | 特性
 
 - Vehicle and device lookup by vincode | 按设备编码/车架号查询车辆设备
+- Configurable telematics provider switch (domestic/overseas) | 支持国内/海外车联网切换
 - Work-hour statistics and daily details | 工时汇总和按日明细查询
 - Trace, condition, fault, and maintenance queries | 轨迹、工况、故障、维保查询
 - Fault repair preparation and CRM+ repair order submission | 故障报修信息准备与 CRM+ 维修工单提交
@@ -67,6 +68,9 @@ Usually you do not need to pass `mcp_server.py`; running `mcp_pipe.py` is enough
 
 客户 App 接口配置存放在 `config/customer_app_config.json`：
 
+- `telematics_provider`: 车联网桥接选择，支持 `domestic` / `overseas`，默认 `domestic`
+- `domestic_telematics.base_url`: 国内车联网桥接地址
+- `domestic_telematics.app_id` / `domestic_telematics.app_secret`: 国内车联网签名鉴权凭据
 - `api_base_url`: 业务接口 base URL
 - `service_order_base_url`: 工单接口 base URL，对应 `XCMG_SERVICE_ORDER_BASE_URL`
 - `service_base_url`: 保养&报修统一工单接口 base URL
@@ -80,6 +84,12 @@ Apifox 开发环境默认地址：
 
 ```json
 {
+  "telematics_provider": "domestic",
+  "domestic_telematics": {
+    "base_url": "https://machinery360.hanyunmmip.cn",
+    "app_id": "",
+    "app_secret": ""
+  },
   "api_base_url": "http://10.90.21.125:9085/business",
   "service_order_base_url": "http://10.90.21.125:9085",
   "service_base_url": "http://10.90.21.125:9085/ixcmg",
@@ -92,6 +102,42 @@ Apifox 开发环境默认地址：
 ```text
 POST http://10.90.21.125:9085/auth/oauth/token
 ```
+
+当 `telematics_provider=domestic` 时，MCP 车联网工具会走国内车联网桥接，启动时不会再自动刷新海外客户 App token。
+
+当前国内车联网已单独接入的能力：
+
+- `query_vehicle_by_vincode`
+- `query_vehicle_by_vincode_v2`
+- `query_planned_maintained_item_page`
+- `query_planned_maintained_item_page_v2`
+- `get_customer_condition`
+- `query_trace`
+- `query_trace_v2`
+- `query_work_hours_statistic_info_by_vehicle`
+- `query_work_hours_statistic_info_by_vehicle_v2`
+- `query_work_hours_page_new_by_date`
+- `query_work_hours_page_new_by_date_v2`
+- `query_core_info`
+- `query_core_info_v2`
+- `query_customer_vehicle_page`
+- `query_customer_vehicle_page_v2`
+- `query_work_rate`
+- `get_work_condition_header`
+- `get_current_work_condition`
+- `query_history_work_condition`
+- `get_env_pro_data`
+- `query_env_pro_history_data`
+- `query_vehicle_alarm`
+- `query_indicator_data`
+- `query_tags_data`
+
+国内与海外的 client 和接口协议已分开实现：
+
+- 海外继续走原 `customer_app` 体系
+- 国内走独立 `domestic_telematics` 体系
+
+其中 `query_customer_vehicle_page` 会退化为基于 `getBaseInfo` 的单车/批量档案封装分页结果。暂未提供国内文档的接口在 `domestic` 模式下会直接返回“暂不支持”。
 
 获取并写入 token：
 

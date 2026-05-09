@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from clients.customer_app import CustomerAppClient
+from clients.telematics_bridge import create_telematics_client
 
 FIXED_VINCODE = "XUGG2154CTKA02713"
 _VIN_FIELD_NAMES = {
@@ -62,8 +62,19 @@ def _require(value: Optional[str], name: str) -> Optional[dict]:
     return None
 
 
-def _client(base_url: Optional[str]) -> CustomerAppClient:
-    return CustomerAppClient(base_url=base_url)
+def _client(base_url: Optional[str]):
+    return create_telematics_client(base_url=base_url)
+
+
+def _call_client_method(method_name: str, base_url: Optional[str] = None, **kwargs) -> dict:
+    client = _client(base_url)
+    method = getattr(client, method_name, None)
+    if method is None:
+        return _error(f"Current telematics provider does not support {method_name}.")
+    try:
+        return method(**kwargs)
+    except ValueError as exc:
+        return _error(str(exc))
 
 
 def query_vehicle_by_vincode_tool(
@@ -653,7 +664,7 @@ def call_service_order_union_tool(
     if validation_error:
         return validation_error
     try:
-        response_data = CustomerAppClient(
+        response_data = create_telematics_client(
             base_url=base_url,
             service_base_url=service_base_url,
         ).call_service_order_union(
@@ -666,4 +677,170 @@ def call_service_order_union_tool(
         )
     except ValueError as exc:
         return _error(str(exc))
+    return _wrap_response(response_data)
+
+
+def query_work_rate_tool(
+    query_date: str,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = _require(query_date, "query_date")
+    if validation_error:
+        return validation_error
+    response_data = _call_client_method(
+        "query_work_rate",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        query_date=query_date,
+    )
+    return _wrap_response(response_data)
+
+
+def get_work_condition_header_tool(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "get_work_condition_header",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+    )
+    return _wrap_response(response_data)
+
+
+def get_current_work_condition_tool(
+    vincode: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "get_customer_condition",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        token=token,
+        language=language,
+    )
+    return _wrap_response(response_data)
+
+
+def query_current_location_tool(
+    vincode: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "query_current_location",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        token=token,
+        language=language,
+    )
+    return _wrap_response(response_data)
+
+
+def query_history_work_condition_tool(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
+    if validation_error:
+        return validation_error
+    response_data = _call_client_method(
+        "query_history_work_condition",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+    )
+    return _wrap_response(response_data)
+
+
+def get_env_pro_data_tool(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "get_env_pro_data",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+    )
+    return _wrap_response(response_data)
+
+
+def query_env_pro_history_data_tool(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
+    if validation_error:
+        return validation_error
+    response_data = _call_client_method(
+        "query_env_pro_history_data",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+    )
+    return _wrap_response(response_data)
+
+
+def query_vehicle_alarm_tool(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
+    if validation_error:
+        return validation_error
+    response_data = _call_client_method(
+        "query_vehicle_alarm",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+    )
+    return _wrap_response(response_data)
+
+
+def query_indicator_data_tool(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "query_indicator_data",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+    )
+    return _wrap_response(response_data)
+
+
+def query_tags_data_tool(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    response_data = _call_client_method(
+        "query_tags_data",
+        base_url=base_url,
+        vincode=_fixed_vincode(),
+    )
     return _wrap_response(response_data)

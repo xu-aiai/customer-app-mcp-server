@@ -1,4 +1,10 @@
 {
+  "telematics_provider": "domestic",
+  "domestic_telematics": {
+    "base_url": "https://machinery360.hanyunmmip.cn",
+    "app_id": "",
+    "app_secret": ""
+  },
   "api_base_url": "http://10.90.21.125:9085/business",
   "service_order_base_url": "http://10.90.21.125:9085",
   "service_base_url": "http://10.90.21.125:9085/ixcmg",

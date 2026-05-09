@@ -6,8 +6,14 @@ from typing import Any, Optional
 from tools.customer_app_tools import (
     call_service_order_union_tool,
     get_customer_condition_tool,
+    get_current_work_condition_tool,
+    get_env_pro_data_tool,
     get_worktime_calendar_list_from_doris_tool,
     get_worktime_calendar_list_from_doris_v2_tool,
+    get_work_condition_header_tool,
+    query_env_pro_history_data_tool,
+    query_history_work_condition_tool,
+    query_indicator_data_tool,
     query_core_info_tool,
     query_core_info_v2_tool,
     query_customer_vehicle_page_tool,
@@ -16,10 +22,14 @@ from tools.customer_app_tools import (
     query_device_fault_page_v2_tool,
     query_planned_maintained_item_page_tool,
     query_planned_maintained_item_page_v2_tool,
+    query_current_location_tool,
     query_trace_tool,
     query_trace_v2_tool,
+    query_tags_data_tool,
+    query_vehicle_alarm_tool,
     query_vehicle_by_vincode_tool,
     query_vehicle_by_vincode_v2_tool,
+    query_work_rate_tool,
     query_work_hours_page_new_by_date_tool,
     query_work_hours_page_new_by_date_v2_tool,
     query_work_hours_statistic_info_by_vehicle_tool,
@@ -36,6 +46,7 @@ from tools.service_order_tools import (
 )
 from clients.customer_app_auth import fetch_customer_app_token
 from clients.customer_app_config import load_customer_app_config
+from clients.telematics_bridge import DOMESTIC_PROVIDER, get_telematics_provider
 
 logger = logging.getLogger('MCPServer')
 
@@ -81,6 +92,9 @@ def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
 def refresh_customer_app_token_on_startup() -> None:
     """Fetch customer app token on server startup and persist it to config."""
     try:
+        if get_telematics_provider() == DOMESTIC_PROVIDER:
+            logger.info("Skip customer app token refresh: domestic telematics is enabled.")
+            return
         config = load_customer_app_config()
         auth_config = config.get("auth") or {}
         required_values = [
@@ -413,6 +427,160 @@ def query_device_fault_page(
         endtime=endtime,
         token=token,
         language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_work_rate(
+    query_date: str,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """月度开工率统计，用于查询某台设备在指定月份的开工率。"""
+    return query_work_rate_tool(
+        query_date=query_date,
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def get_work_condition_header(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """工况动态表头查询，用于获取工况字段的中文名、单位和字典解释。"""
+    return get_work_condition_header_tool(
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def get_current_work_condition(
+    vincode: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """当前工况查询，用于获取设备最新工况数据。"""
+    return get_current_work_condition_tool(
+        vincode=_fixed_vincode(),
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_current_location(
+    vincode: Optional[str] = None,
+    token: Optional[str] = None,
+    language: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """当前位置查询，用于获取设备最新定位位置、经纬度和 GPS 时间。"""
+    return query_current_location_tool(
+        vincode=_fixed_vincode(),
+        token=token,
+        language=language,
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_history_work_condition(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """历史工况查询，用于获取单台设备时间段内历史工况分页数据。"""
+    return query_history_work_condition_tool(
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def get_env_pro_data(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """环保当前工况查询，用于获取单车最新环保工况数据。"""
+    return get_env_pro_data_tool(
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_env_pro_history_data(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """环保历史工况查询，用于获取单车时间段内环保工况分页数据。"""
+    return query_env_pro_history_data_tool(
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_vehicle_alarm(
+    start_time: str,
+    end_time: str,
+    current: int = 1,
+    size: int = 20,
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """故障报警查询，用于获取单车设备时间段故障分页数据。"""
+    return query_vehicle_alarm_tool(
+        start_time=start_time,
+        end_time=end_time,
+        current=current,
+        size=size,
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_indicator_data(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """设备指标数据查询，用于批量获取设备指标排行和分布标签。"""
+    return query_indicator_data_tool(
+        vincode=_fixed_vincode(),
+        base_url=base_url,
+    )
+
+
+@mcp.tool()
+def query_tags_data(
+    vincode: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> dict:
+    """设备标签数据查询，用于批量获取设备类型、在线状态、ACC 状态等标签信息。"""
+    return query_tags_data_tool(
+        vincode=_fixed_vincode(),
         base_url=base_url,
     )
 
