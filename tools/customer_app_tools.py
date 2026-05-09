@@ -1,6 +1,43 @@
-from typing import Optional
+from typing import Any, Optional
 
 from clients.customer_app import CustomerAppClient
+
+FIXED_VINCODE = "XUGG2154CTKA02713"
+_VIN_FIELD_NAMES = {
+    "vincode",
+    "vin",
+    "deviceVin",
+    "device_vin",
+    "userprofileCode",
+    "userprofile_code",
+}
+
+
+def _fixed_vincode() -> str:
+    return FIXED_VINCODE
+
+
+def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
+    if isinstance(value, dict):
+        return {
+            key: (
+                _fixed_vincode()
+                if key in _VIN_FIELD_NAMES
+                else _force_fixed_vincode(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_force_fixed_vincode(item) for item in value]
+    return value
+
+
+def _fixed_device_query_params(params: Optional[dict] = None) -> dict:
+    fixed_params = dict(_force_fixed_vincode(params or {}) or {})
+    fixed_params["vincode"] = _fixed_vincode()
+    fixed_params["deviceVin"] = _fixed_vincode()
+    fixed_params["searchKey"] = _fixed_vincode()
+    return fixed_params
 
 
 def _error(message: str) -> dict:
@@ -30,7 +67,7 @@ def _client(base_url: Optional[str]) -> CustomerAppClient:
 
 
 def query_vehicle_by_vincode_tool(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -40,13 +77,13 @@ def query_vehicle_by_vincode_tool(
     Calls GET /apiForAi/customerVehicle/{vincode}.
     Uses vincode as the path variable.
     """
-    validation_error = _require(vincode, "vincode")
+    validation_error = None
     if validation_error:
         return validation_error
 
     try:
         response_data = _client(base_url).query_vehicle_by_vincode(
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -56,17 +93,17 @@ def query_vehicle_by_vincode_tool(
 
 
 def query_vehicle_by_vincode_v2_tool(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    validation_error = _require(vincode, "vincode")
+    validation_error = None
     if validation_error:
         return validation_error
     try:
         response_data = _client(base_url).query_vehicle_by_vincode_v2(
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -78,7 +115,7 @@ def query_vehicle_by_vincode_v2_tool(
 def query_work_hours_statistic_info_by_vehicle_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -91,7 +128,6 @@ def query_work_hours_statistic_info_by_vehicle_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -100,7 +136,7 @@ def query_work_hours_statistic_info_by_vehicle_tool(
         response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -112,7 +148,7 @@ def query_work_hours_statistic_info_by_vehicle_tool(
 def query_work_hours_statistic_info_by_vehicle_v2_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -120,7 +156,6 @@ def query_work_hours_statistic_info_by_vehicle_v2_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -128,7 +163,7 @@ def query_work_hours_statistic_info_by_vehicle_v2_tool(
         response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle_v2(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -163,7 +198,7 @@ def query_planned_maintained_item_page_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             itemName=item_name,
         )
     except ValueError as exc:
@@ -192,7 +227,7 @@ def query_planned_maintained_item_page_v2_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             itemName=item_name,
         )
     except ValueError as exc:
@@ -201,7 +236,7 @@ def query_planned_maintained_item_page_v2_tool(
 
 
 def get_customer_condition_tool(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -210,13 +245,13 @@ def get_customer_condition_tool(
 
     Calls GET /customerApp/getCustomerCondition with query field vincode.
     """
-    validation_error = _require(vincode, "vincode")
+    validation_error = None
     if validation_error:
         return validation_error
 
     try:
         response_data = _client(base_url).get_customer_condition(
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -228,7 +263,7 @@ def get_customer_condition_tool(
 def query_work_hours_page_new_by_date_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     total: Optional[int] = None,
     size: Optional[int] = None,
     current: Optional[int] = None,
@@ -245,7 +280,6 @@ def query_work_hours_page_new_by_date_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -259,7 +293,7 @@ def query_work_hours_page_new_by_date_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             orderAsc=order_asc,
         )
     except ValueError as exc:
@@ -270,7 +304,7 @@ def query_work_hours_page_new_by_date_tool(
 def query_work_hours_page_new_by_date_v2_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     total: Optional[int] = None,
     size: Optional[int] = None,
     current: Optional[int] = None,
@@ -282,7 +316,6 @@ def query_work_hours_page_new_by_date_v2_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -295,7 +328,7 @@ def query_work_hours_page_new_by_date_v2_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             orderAsc=order_asc,
         )
     except ValueError as exc:
@@ -306,7 +339,7 @@ def query_work_hours_page_new_by_date_v2_tool(
 def get_worktime_calendar_list_from_doris_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -319,7 +352,6 @@ def get_worktime_calendar_list_from_doris_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -330,7 +362,7 @@ def get_worktime_calendar_list_from_doris_tool(
             language=language,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -340,7 +372,7 @@ def get_worktime_calendar_list_from_doris_tool(
 def get_worktime_calendar_list_from_doris_v2_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -348,7 +380,6 @@ def get_worktime_calendar_list_from_doris_v2_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -358,7 +389,7 @@ def get_worktime_calendar_list_from_doris_v2_tool(
             language=language,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -368,7 +399,7 @@ def get_worktime_calendar_list_from_doris_v2_tool(
 def query_trace_tool(
     begin_time: str,
     end_time: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -381,7 +412,6 @@ def query_trace_tool(
     validation_error = (
         _require(begin_time, "begin_time")
         or _require(end_time, "end_time")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -392,7 +422,7 @@ def query_trace_tool(
             language=language,
             beginTime=begin_time,
             endTime=end_time,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -402,7 +432,7 @@ def query_trace_tool(
 def query_trace_v2_tool(
     begin_time: str,
     end_time: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -410,7 +440,6 @@ def query_trace_v2_tool(
     validation_error = (
         _require(begin_time, "begin_time")
         or _require(end_time, "end_time")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -420,7 +449,7 @@ def query_trace_v2_tool(
             language=language,
             beginTime=begin_time,
             endTime=end_time,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -449,8 +478,8 @@ def query_customer_vehicle_page_tool(
             total=total,
             size=size,
             current=current,
-            id=vehicle_id,
-            searchKey=search_key,
+            id=None,
+            searchKey=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -474,8 +503,8 @@ def query_customer_vehicle_page_v2_tool(
             total=total,
             size=size,
             current=current,
-            id=vehicle_id,
-            searchKey=search_key,
+            id=None,
+            searchKey=_fixed_vincode(),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -506,7 +535,7 @@ def query_device_fault_page_tool(
             total=total,
             size=size,
             current=current,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             faultcode=faultcode,
             starttime=starttime,
             endtime=endtime,
@@ -535,7 +564,7 @@ def query_device_fault_page_v2_tool(
             total=total,
             size=size,
             current=current,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             faultcode=faultcode,
             starttime=starttime,
             endtime=endtime,
@@ -548,7 +577,7 @@ def query_device_fault_page_v2_tool(
 def query_core_info_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -561,7 +590,6 @@ def query_core_info_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -570,7 +598,7 @@ def query_core_info_tool(
         response_data = _client(base_url).query_core_info(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -582,7 +610,7 @@ def query_core_info_tool(
 def query_core_info_v2_tool(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -590,7 +618,6 @@ def query_core_info_v2_tool(
     validation_error = (
         _require(begin_date, "begin_date")
         or _require(end_date, "end_date")
-        or _require(vincode, "vincode")
     )
     if validation_error:
         return validation_error
@@ -598,7 +625,7 @@ def query_core_info_v2_tool(
         response_data = _client(base_url).query_core_info_v2(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             token=token,
             language=language,
         )
@@ -634,8 +661,8 @@ def call_service_order_union_tool(
             method=method,
             token=token,
             language=language,
-            params=params,
-            payload=payload,
+            params=_fixed_device_query_params(params),
+            payload=_force_fixed_vincode(payload),
         )
     except ValueError as exc:
         return _error(str(exc))

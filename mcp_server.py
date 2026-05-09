@@ -2,7 +2,7 @@
 from fastmcp import FastMCP
 import sys
 import logging
-from typing import Optional
+from typing import Any, Optional
 from tools.customer_app_tools import (
     call_service_order_union_tool,
     get_customer_condition_tool,
@@ -47,6 +47,36 @@ if sys.platform == 'win32':
 # Create an MCP server
 mcp = FastMCP("CustomerAppMCP")
 
+FIXED_VINCODE = "XUGG2154CTKA02713"
+_VIN_FIELD_NAMES = {
+    "vincode",
+    "vin",
+    "deviceVin",
+    "device_vin",
+    "userprofileCode",
+    "userprofile_code",
+}
+
+
+def _fixed_vincode() -> str:
+    return FIXED_VINCODE
+
+
+def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
+    """Return a copy with VIN-like fields forced to the configured device."""
+    if isinstance(value, dict):
+        return {
+            key: (
+                _fixed_vincode()
+                if key in _VIN_FIELD_NAMES
+                else _force_fixed_vincode(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_force_fixed_vincode(item) for item in value]
+    return value
+
 
 def refresh_customer_app_token_on_startup() -> None:
     """Fetch customer app token on server startup and persist it to config."""
@@ -83,7 +113,7 @@ def calculator(python_expression: str) -> dict:
 
 @mcp.tool()
 def query_vehicle_by_vincode(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -99,7 +129,7 @@ def query_vehicle_by_vincode(
     - vincode: 设备编码/车架号。
     """
     return query_vehicle_by_vincode_tool(
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -110,7 +140,7 @@ def query_vehicle_by_vincode(
 def query_work_hours_statistic_info_by_vehicle(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -130,7 +160,7 @@ def query_work_hours_statistic_info_by_vehicle(
     return query_work_hours_statistic_info_by_vehicle_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -170,7 +200,7 @@ def query_planned_maintained_item_page(
         current=current,
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         item_name=item_name,
         token=token,
         language=language,
@@ -180,7 +210,7 @@ def query_planned_maintained_item_page(
 
 @mcp.tool()
 def get_customer_condition(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -196,7 +226,7 @@ def get_customer_condition(
     - vincode: 车架号/设备编码。
     """
     return get_customer_condition_tool(
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -207,7 +237,7 @@ def get_customer_condition(
 def query_work_hours_page_new_by_date(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     total: Optional[int] = None,
     size: Optional[int] = None,
     current: Optional[int] = None,
@@ -235,7 +265,7 @@ def query_work_hours_page_new_by_date(
     return query_work_hours_page_new_by_date_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         total=total,
         size=size,
         current=current,
@@ -250,7 +280,7 @@ def query_work_hours_page_new_by_date(
 def get_worktime_calendar_list_from_doris(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -271,7 +301,7 @@ def get_worktime_calendar_list_from_doris(
     return get_worktime_calendar_list_from_doris_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -282,7 +312,7 @@ def get_worktime_calendar_list_from_doris(
 def query_trace(
     begin_time: str,
     end_time: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -303,7 +333,7 @@ def query_trace(
     return query_trace_tool(
         begin_time=begin_time,
         end_time=end_time,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -338,8 +368,8 @@ def query_customer_vehicle_page(
         total=total,
         size=size,
         current=current,
-        vehicle_id=vehicle_id,
-        search_key=search_key,
+        vehicle_id=None,
+        search_key=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -377,7 +407,7 @@ def query_device_fault_page(
         total=total,
         size=size,
         current=current,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         faultcode=faultcode,
         starttime=starttime,
         endtime=endtime,
@@ -391,7 +421,7 @@ def query_device_fault_page(
 def query_core_info(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -412,7 +442,7 @@ def query_core_info(
     return query_core_info_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -453,7 +483,7 @@ def prepare_fault_repair(
         user_message=user_message,
         conversation_history=conversation_history,
         session_state=session_state,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         fault_description=fault_description,
         new_contact=new_contact,
         new_feedbacktel=new_feedbacktel,
@@ -486,8 +516,8 @@ def submit_fault_repair_order(
     crmplus_app_id、crmplus_app_secret。
     """
     return submit_fault_repair_order_tool(
-        payload=payload,
-        device_vin=device_vin,
+        payload=_force_fixed_vincode(payload),
+        device_vin=_fixed_vincode(),
         fault_description=fault_description,
         contact_name=contact_name,
         contact_phone=contact_phone,
@@ -527,7 +557,7 @@ def list_service_orders(
     return list_service_orders_tool(
         app_token=app_token,
         xcmg_app_token=xcmg_app_token,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         page_num=page_num,
         page_size=page_size,
         language=language,
@@ -572,14 +602,14 @@ def get_service_order_detail(
 
 @mcp.tool()
 def query_vehicle_by_vincode_v2(
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """通过 vincode 查询车辆详情 v2。API: GET /apiForAi/v2/customerVehicle/{vincode}。"""
     return query_vehicle_by_vincode_v2_tool(
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -590,7 +620,7 @@ def query_vehicle_by_vincode_v2(
 def query_work_hours_statistic_info_by_vehicle_v2(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -599,7 +629,7 @@ def query_work_hours_statistic_info_by_vehicle_v2(
     return query_work_hours_statistic_info_by_vehicle_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -626,7 +656,7 @@ def query_planned_maintained_item_page_v2(
         current=current,
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         item_name=item_name,
         token=token,
         language=language,
@@ -638,7 +668,7 @@ def query_planned_maintained_item_page_v2(
 def query_work_hours_page_new_by_date_v2(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     total: Optional[int] = None,
     size: Optional[int] = None,
     current: Optional[int] = None,
@@ -651,7 +681,7 @@ def query_work_hours_page_new_by_date_v2(
     return query_work_hours_page_new_by_date_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         total=total,
         size=size,
         current=current,
@@ -666,7 +696,7 @@ def query_work_hours_page_new_by_date_v2(
 def get_worktime_calendar_list_from_doris_v2(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -675,7 +705,7 @@ def get_worktime_calendar_list_from_doris_v2(
     return get_worktime_calendar_list_from_doris_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -686,7 +716,7 @@ def get_worktime_calendar_list_from_doris_v2(
 def query_trace_v2(
     begin_time: str,
     end_time: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -695,7 +725,7 @@ def query_trace_v2(
     return query_trace_v2_tool(
         begin_time=begin_time,
         end_time=end_time,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -718,8 +748,8 @@ def query_customer_vehicle_page_v2(
         total=total,
         size=size,
         current=current,
-        vehicle_id=vehicle_id,
-        search_key=search_key,
+        vehicle_id=None,
+        search_key=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -744,7 +774,7 @@ def query_device_fault_page_v2(
         total=total,
         size=size,
         current=current,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         faultcode=faultcode,
         starttime=starttime,
         endtime=endtime,
@@ -758,7 +788,7 @@ def query_device_fault_page_v2(
 def query_core_info_v2(
     begin_date: str,
     end_date: str,
-    vincode: str,
+    vincode: Optional[str] = None,
     token: Optional[str] = None,
     language: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -767,7 +797,7 @@ def query_core_info_v2(
     return query_core_info_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=vincode,
+        vincode=_fixed_vincode(),
         token=token,
         language=language,
         base_url=base_url,
@@ -794,8 +824,8 @@ def call_service_order_union(
     return call_service_order_union_tool(
         endpoint=endpoint,
         method=method,
-        params=params,
-        payload=payload,
+        params=_force_fixed_vincode(params),
+        payload=_force_fixed_vincode(payload),
         token=token,
         language=language,
         base_url=base_url,

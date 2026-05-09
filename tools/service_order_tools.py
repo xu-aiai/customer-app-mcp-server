@@ -82,6 +82,12 @@ COMPACT_FIELDS = (
     "workMileage",
 )
 
+FIXED_VINCODE = "XUGG2154CTKA02713"
+
+
+def _fixed_vincode() -> str:
+    return FIXED_VINCODE
+
 
 def _error(message: str) -> dict:
     return {
@@ -177,7 +183,7 @@ def list_service_orders_tool(
             service_base_url=service_base_url,
         ).fetch_orders(
             app_token=resolved_token,
-            vincode=vincode,
+            vincode=_fixed_vincode(),
             page_num=page_num,
             page_size=page_size,
             language=language,
@@ -191,7 +197,7 @@ def list_service_orders_tool(
         "data": {
             "page_num": page_num,
             "page_size": page_size,
-            "vincode": vincode or None,
+            "vincode": _fixed_vincode(),
             "records": [_compact_record(record) for record in limited_records],
         },
     }
@@ -222,6 +228,10 @@ def get_service_order_detail_tool(
         )
     except ValueError as exc:
         return _error(str(exc))
+
+    device_vin = str(record.get("deviceVin") or "").strip()
+    if device_vin and device_vin != _fixed_vincode():
+        return _error("Service order does not belong to the fixed device.")
 
     return {
         "success": True,

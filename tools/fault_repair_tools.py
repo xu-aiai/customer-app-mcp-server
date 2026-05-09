@@ -13,6 +13,11 @@ REQUIRED_FIELDS = [
 ]
 
 _ALNUM_VINCODE_RE = re.compile(r"^[A-Za-z0-9]{8,30}$")
+FIXED_VINCODE = "XUGG2154CTKA02713"
+
+
+def _fixed_vincode() -> str:
+    return FIXED_VINCODE
 
 
 def _error(message: str, **extra: Any) -> dict:
@@ -382,10 +387,6 @@ def _enrich_devices(devices: List[dict]) -> List[dict]:
     return enriched
 
 
-def _voice_select_device_message(devices: Sequence[dict]) -> str:
-    return f"你名下有{len(devices)}台设备，请说第几辆，或者直接说设备编码。"
-
-
 def _validate_or_resolve_vincode(state: dict) -> tuple[str, Optional[dict]]:
     vincode = _text(state.get("vincode"))
     devices = state.get("devices")
@@ -398,11 +399,11 @@ def _validate_or_resolve_vincode(state: dict) -> tuple[str, Optional[dict]]:
         if re.search(r"[\u4e00-\u9fa5]", vincode) or not _is_probable_vincode(vincode):
             return "", {
                 "action": "ask_missing_info",
-                "message": "没找到这台设备，请说第几辆或完整设备编码。",
+                "message": "没找到固定设备，无法进行故障报修。",
             }
         return "", {
             "action": "ask_missing_info",
-            "message": "没找到这台设备，请说第几辆或完整设备编码。",
+            "message": "没找到固定设备，无法进行故障报修。",
         }
     if not _is_probable_vincode(vincode):
         return "", {
@@ -478,6 +479,8 @@ def prepare_fault_repair_tool(
         new_contact=new_contact,
         new_feedbacktel=new_feedbacktel,
     )
+    state["vincode"] = _fixed_vincode()
+    state.pop("devices", None)
 
     try:
         client = CustomerAppClient(base_url=base_url)
@@ -496,40 +499,7 @@ def prepare_fault_repair_tool(
         state["vincode"] = resolved_vincode
 
     if not state["vincode"]:
-        try:
-            response_data = client.query_customer_vehicle_page(
-                token=resolved_token,
-                language=language,
-                current=1,
-                size=20,
-            )
-        except ValueError:
-            return _error("暂时获取不到设备列表，请稍后再试。", state=state)
-        if _api_failed(response_data):
-            return _error(
-                "暂时获取不到设备列表，请稍后再试。",
-                state=state,
-            )
-
-        devices = _enrich_devices(
-            [_device_summary(device) for device in _extract_devices(response_data)]
-        )
-        devices = [device for device in devices if device.get("vincode")]
-        state["devices"] = devices
-        if not devices:
-            return _ok(
-                "no_device",
-                "您当前暂无绑定设备，无法进行故障报修。",
-                response="你当前没有可报修的设备。",
-                state=state,
-            )
-        return _ok(
-            "select_device",
-            _voice_select_device_message(devices),
-            response=_voice_select_device_message(devices),
-            devices=devices,
-            state=state,
-        )
+        return _error("固定设备编码缺失，无法进行故障报修。", state=state)
 
     try:
         detail_result = client.query_vehicle_by_vincode(
@@ -538,10 +508,10 @@ def prepare_fault_repair_tool(
             language=language,
         )
     except ValueError:
-        return _error("设备编码不正确，请说第几辆或完整设备编码。", state=state)
+        return _error("固定设备编码不正确，无法进行故障报修。", state=state)
     if _api_failed(detail_result):
         return _error(
-            "没找到这台设备，请说第几辆或完整设备编码。",
+            "没找到固定设备，无法进行故障报修。",
             state=state,
         )
 
@@ -613,7 +583,7 @@ def submit_fault_repair_order_tool(
 ) -> dict:
     """Create the CRM+ repair order after the submitWorkorder payload is confirmed."""
     payload = dict(payload or {})
-    resolved_device_vin = _text(device_vin or payload.get("deviceVin"))
+    resolved_device_vin = _fixed_vincode()
     resolved_fault_description = _text(
         fault_description or payload.get("faultDescription")
     )

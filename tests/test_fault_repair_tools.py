@@ -11,7 +11,11 @@ fake_crmplus_client = types.ModuleType("clients.crmplus_client")
 fake_crmplus_client.create_repair_order = lambda **kwargs: {}
 sys.modules.setdefault("clients.crmplus_client", fake_crmplus_client)
 
-from tools.fault_repair_tools import prepare_fault_repair_tool
+from tools.fault_repair_tools import (
+    FIXED_VINCODE,
+    prepare_fault_repair_tool,
+    submit_fault_repair_order_tool,
+)
 
 
 class FakeCustomerAppClient:
@@ -32,7 +36,7 @@ class FakeCustomerAppClient:
         return self.vehicle_detail
 
 
-def _detail_response(vincode="XUGY215LCRKA00005"):
+def _detail_response(vincode=FIXED_VINCODE):
     return {
         "data": {
             "id": "vehicle-1",
@@ -45,35 +49,18 @@ def _detail_response(vincode="XUGY215LCRKA00005"):
 
 
 class PrepareFaultRepairToolTest(unittest.TestCase):
-    def test_select_device_returns_voice_response_and_indexed_devices(self):
+    def test_prepare_without_vincode_uses_fixed_device(self):
         fake = FakeCustomerAppClient(
-            vehicle_page={
-                "code": 0,
-                "data": {
-                    "items": [
-                        {
-                            "vincode": "XUGY215LCRKA00005",
-                            "id": "vehicle-1",
-                            "productTypeName": "挖掘机",
-                        },
-                        {
-                            "vincode": "XUGY215LCRKA00006",
-                            "id": "vehicle-2",
-                            "productTypeName": "装载机",
-                        },
-                    ]
-                },
-            }
+            vehicle_detail=_detail_response(),
         )
 
         with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
             result = prepare_fault_repair_tool()
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["action"], "select_device")
-        self.assertEqual(result["response"], "你名下有2台设备，请说第几辆，或者直接说设备编码。")
-        self.assertEqual(result["devices"][0]["index"], 1)
-        self.assertEqual(result["state"]["devices"][1]["label"], "第2辆")
+        self.assertEqual(fake.detail_calls, [FIXED_VINCODE])
+        self.assertEqual(result["action"], "ask_missing_info")
+        self.assertEqual(result["state"]["vincode"], FIXED_VINCODE)
 
     def test_ordinal_device_selection_resolves_to_real_vincode(self):
         fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
@@ -93,10 +80,10 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
                 new_feedbacktel="13800138000",
             )
 
-        self.assertEqual(fake.detail_calls, ["XUGY215LCRKA00005"])
+        self.assertEqual(fake.detail_calls, [FIXED_VINCODE])
         self.assertTrue(result["success"])
         self.assertEqual(result["action"], "confirm_submit")
-        self.assertEqual(result["submit_payload"]["deviceVin"], "XUGY215LCRKA00005")
+        self.assertEqual(result["submit_payload"]["deviceVin"], FIXED_VINCODE)
 
     def test_submit_workorder_payload_contains_frontend_fields(self):
         fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
@@ -117,7 +104,7 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
                 "value": "确认",
                 "action": "confirm_work_order",
                 "type": "submitWorkorder",
-                "deviceVin": "XUGY215LCRKA00005",
+                "deviceVin": FIXED_VINCODE,
                 "faultDescription": "GPS电源坏了",
                 "deviceId": "vehicle-1",
                 "deviceModel": "XE215",
@@ -128,7 +115,7 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
             },
         )
 
-    def test_invalid_vincode_with_devices_returns_recoverable_error_without_backend_call(self):
+    def test_invalid_vincode_is_ignored_and_fixed_device_is_used(self):
         fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
         state = {
             "devices": [
@@ -142,11 +129,10 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
                 vincode="测试0005",
             )
 
-        self.assertEqual(fake.detail_calls, [])
-        self.assertFalse(result["success"])
+        self.assertEqual(fake.detail_calls, [FIXED_VINCODE])
+        self.assertTrue(result["success"])
         self.assertEqual(result["action"], "ask_missing_info")
-        self.assertEqual(result["message"], "没找到这台设备，请说第几辆或完整设备编码。")
-        self.assertEqual(result["response"], result["message"])
+        self.assertEqual(result["state"]["vincode"], FIXED_VINCODE)
 
     def test_backend_detail_error_is_compressed(self):
         fake = FakeCustomerAppClient(
@@ -160,10 +146,34 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
         with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
             result = prepare_fault_repair_tool(vincode="XUGY215LCRKA00005")
 
-        self.assertEqual(fake.detail_calls, ["XUGY215LCRKA00005"])
+        self.assertEqual(fake.detail_calls, [FIXED_VINCODE])
         self.assertFalse(result["success"])
-        self.assertEqual(result["message"], "没找到这台设备，请说第几辆或完整设备编码。")
+        self.assertEqual(result["message"], "没找到固定设备，无法进行故障报修。")
         self.assertNotIn("very long stack trace", str(result))
+
+    def test_submit_order_ignores_payload_and_argument_device_vin(self):
+        calls = []
+
+        def fake_create_repair_order(**kwargs):
+            calls.append(kwargs)
+            return {"id": "order-1"}
+
+        with patch(
+            "tools.fault_repair_tools.create_repair_order",
+            side_effect=fake_create_repair_order,
+        ):
+            result = submit_fault_repair_order_tool(
+                payload={
+                    "deviceVin": "XUGY215LCRKA00005",
+                    "faultDescription": "GPS电源坏了",
+                    "contactName": "小徐",
+                    "contactPhone": "18888106769",
+                },
+                device_vin="XUGY215LCRKA00006",
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(calls[0]["userprofile_code"], FIXED_VINCODE)
 
 
 if __name__ == "__main__":
