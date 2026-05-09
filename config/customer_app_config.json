@@ -10,7 +10,7 @@
   "service_base_url": "http://10.90.21.125:9085/ixcmg",
   "crmplus_base_url": "https://app-crmplus-uat.xcmg.com",
   "crmplus_app_id": "cozz6bvanprvxm3y",
-  "crmplus_app_secret": "RSsYDjOTRUy1GNfbUgCPz0suosNemc2VaI6zbnencF0m95dHyOQKbrylJcCzT44Z",
+  "crmplus_app_secret": "pFq2A2rUiMKzYCvC5oksNrmbRurDqEWqwBCTWuc8RuKa4rQOgBPq6NO6Gn8Ii6v8",
   "auth_base_url": "http://10.90.21.125:9085/auth",
   "language": "zh-CN",
   "auth": {
