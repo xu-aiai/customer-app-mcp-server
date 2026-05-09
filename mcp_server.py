@@ -642,11 +642,11 @@ def prepare_fault_repair(
 
     适用问题：
     - 用户要新报修，需要抽取/补齐整机编码、故障描述、现场联系人和电话。
-    - 没有整机编码时，返回用户绑定设备列表供选择。
+    - 车机场景固定报修当前设备，不询问报修哪台设备。
     - 信息齐全时，返回 submitWorkorder payload 供确认提交。
 
     必填信息：
-    - vincode/deviceVin: 整机编码。
+    - vincode/deviceVin: 整机编码；车机场景固定为当前设备。
     - fault_description/faultDescription: 故障描述。
     - new_contact/contactName: 现场联系人姓名。
     - new_feedbacktel/contactPhone: 现场联系人电话。

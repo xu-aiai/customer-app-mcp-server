@@ -8,6 +8,7 @@ from urllib import error, parse, request
 from clients.customer_app_config import get_config_value
 
 REQUEST_TIMEOUT_SECONDS = 30
+_INVALID_ERROR_MESSAGES = {"", "-1", "0", "null", "none", "unknown"}
 
 
 class CRMPlusClient:
@@ -106,7 +107,14 @@ class CRMPlusClient:
         error_code = result.get("ErrorCode", -1)
         if error_code == 0:
             return result.get("Data", {})
-        raise ValueError(result.get("Message") or "创建服务单失败")
+        raise ValueError(self._format_work_order_error(result))
+
+    def _format_work_order_error(self, result: Dict[str, Any]) -> str:
+        error_code = result.get("ErrorCode", -1)
+        raw_message = str(result.get("Message") or "").strip()
+        if raw_message.lower() not in _INVALID_ERROR_MESSAGES:
+            return raw_message
+        return f"CRM+ 创建服务单失败（ErrorCode: {error_code}）"
 
     def _headers(self) -> Dict[str, str]:
         token = self._get_token()
@@ -121,26 +129,45 @@ class CRMPlusClient:
             return self._access_token
 
         self._require_config()
-        body = parse.urlencode(
+        payload_candidates = [
+            {
+                "grant_type": "application",
+                "appId": self.app_id,
+                "appSecret": self.app_secret,
+            },
             {
                 "grant_type": "application",
                 "appid": self.app_id,
                 "appsecret": self.app_secret,
-            }
-        ).encode("utf-8")
-        api_request = request.Request(
-            f"{self.base_url}/token",
-            data=body,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            method="POST",
-        )
-        result = self._send(api_request)
-        token = result.get("access_token")
-        if not token:
-            raise ValueError(result.get("message") or "获取 CRM+ Token 失败")
-        self._access_token = token
-        self._token_expire_time = time.time() + 7200
-        return token
+            },
+        ]
+        last_error = "获取 CRM+ Token 失败"
+        result: Dict[str, Any] = {}
+        for payload in payload_candidates:
+            body = parse.urlencode(payload).encode("utf-8")
+            api_request = request.Request(
+                f"{self.base_url}/token",
+                data=body,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                method="POST",
+            )
+            try:
+                result = self._send(api_request)
+                token = result.get("access_token")
+                if token:
+                    self._access_token = token
+                    self._token_expire_time = time.time() + 7200
+                    return token
+                last_error = (
+                    result.get("message")
+                    or result.get("error_description")
+                    or result.get("error")
+                    or last_error
+                )
+            except ValueError as exc:
+                last_error = str(exc) or last_error
+
+        raise ValueError(last_error)
 
     def _post_json(
         self,
@@ -169,7 +196,13 @@ class CRMPlusClient:
                 payload = json.loads(response_body)
             except JSONDecodeError:
                 payload = {"error": response_body}
-            raise ValueError(payload.get("Message") or payload.get("error") or str(exc))
+            raise ValueError(
+                payload.get("Message")
+                or payload.get("message")
+                or payload.get("error_description")
+                or payload.get("error")
+                or str(exc)
+            )
         except error.URLError as exc:
             raise ValueError(f"请求 CRM+ 接口失败: {exc.reason}")
         except JSONDecodeError as exc:

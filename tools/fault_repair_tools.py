@@ -32,6 +32,13 @@ def _error(message: str, **extra: Any) -> dict:
     }
 
 
+def _normalize_submit_error(message: str) -> str:
+    cleaned = _text(message)
+    if cleaned in {"", "-1", "0"}:
+        return "提交维修工单失败，请稍后重试。"
+    return cleaned
+
+
 def _ok(action: str, message: str, **extra: Any) -> dict:
     return {
         "success": True,
@@ -615,7 +622,8 @@ def submit_fault_repair_order_tool(
             source=source,
         )
     except Exception as exc:
-        return _error(str(exc))
+        message = _normalize_submit_error(str(exc))
+        return _error(message, action="submit_failed", response=message)
 
     return {
         "success": True,

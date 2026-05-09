@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 from unittest.mock import patch
+from urllib import error
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -92,6 +93,84 @@ class CRMPlusClientConfigTest(unittest.TestCase):
                 "new_address": "徐州",
             },
         )
+
+    def test_get_token_prefers_camel_case_fields(self):
+        client = CRMPlusClient(
+            base_url="https://config-crmplus.example.com",
+            app_id="config-app",
+            app_secret="config-secret",
+        )
+
+        captured = []
+
+        def fake_send(api_request):
+            captured.append(api_request.data.decode("utf-8"))
+            return {"access_token": "token-1"}
+
+        with patch.object(client, "_send", side_effect=fake_send):
+            token = client._get_token()
+
+        self.assertEqual(token, "token-1")
+        self.assertEqual(
+            captured,
+            ["grant_type=application&appId=config-app&appSecret=config-secret"],
+        )
+
+    def test_get_token_falls_back_to_lower_case_fields(self):
+        client = CRMPlusClient(
+            base_url="https://config-crmplus.example.com",
+            app_id="config-app",
+            app_secret="config-secret",
+        )
+
+        captured = []
+
+        def fake_send(api_request):
+            captured.append(api_request.data.decode("utf-8"))
+            if len(captured) == 1:
+                raise ValueError("无效的身份")
+            return {"access_token": "token-2"}
+
+        with patch.object(client, "_send", side_effect=fake_send):
+            token = client._get_token()
+
+        self.assertEqual(token, "token-2")
+        self.assertEqual(
+            captured,
+            [
+                "grant_type=application&appId=config-app&appSecret=config-secret",
+                "grant_type=application&appid=config-app&appsecret=config-secret",
+            ],
+        )
+
+    def test_http_error_prefers_error_description(self):
+        client = CRMPlusClient(
+            base_url="https://config-crmplus.example.com",
+            app_id="config-app",
+            app_secret="config-secret",
+        )
+
+        class FakeResponse:
+            def read(self):
+                return b'{\"error\":\"-1\",\"error_description\":\"\xe6\x97\xa0\xe6\x95\x88\xe7\x9a\x84\xe8\xba\xab\xe4\xbb\xbd\"}'
+
+            def close(self):
+                return None
+
+        api_request = object()
+        http_error = error.HTTPError(
+            url="https://config-crmplus.example.com/token",
+            code=400,
+            msg="Bad Request",
+            hdrs=None,
+            fp=FakeResponse(),
+        )
+
+        with patch("clients.crmplus.request.urlopen", side_effect=http_error):
+            with self.assertRaises(ValueError) as ctx:
+                client._send(api_request)
+
+        self.assertEqual(str(ctx.exception), "无效的身份")
 
 
 if __name__ == "__main__":
