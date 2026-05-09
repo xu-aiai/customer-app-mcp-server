@@ -2,8 +2,9 @@ import re
 from typing import Any, Dict, List, Optional, Sequence
 
 from clients.crmplus_client import create_repair_order
-from clients.customer_app import CustomerAppClient
+from clients.telematics_bridge import create_telematics_client
 
+CustomerAppClient = create_telematics_client
 
 REQUIRED_FIELDS = [
     "vincode",

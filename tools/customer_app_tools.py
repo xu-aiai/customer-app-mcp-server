@@ -1,6 +1,10 @@
 from typing import Any, Optional
 
-from clients.telematics_bridge import create_telematics_client
+from clients.telematics_bridge import (
+    DOMESTIC_PROVIDER,
+    create_telematics_client,
+    get_telematics_provider,
+)
 
 FIXED_VINCODE = "XUGG2154CTKA02713"
 _VIN_FIELD_NAMES = {
@@ -17,7 +21,25 @@ def _fixed_vincode() -> str:
     return FIXED_VINCODE
 
 
+def _use_fixed_domestic_vincode() -> bool:
+    return get_telematics_provider() == DOMESTIC_PROVIDER
+
+
+def _resolve_vincode(vincode: Optional[str]) -> str:
+    if _use_fixed_domestic_vincode():
+        return _fixed_vincode()
+    return str(vincode or "").strip()
+
+
+def _resolve_search_key(search_key: Optional[str]) -> str:
+    if _use_fixed_domestic_vincode():
+        return _fixed_vincode()
+    return str(search_key or "").strip()
+
+
 def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
+    if not _use_fixed_domestic_vincode():
+        return value
     if isinstance(value, dict):
         return {
             key: (
@@ -33,6 +55,8 @@ def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
 
 
 def _fixed_device_query_params(params: Optional[dict] = None) -> dict:
+    if not _use_fixed_domestic_vincode():
+        return dict(params or {})
     fixed_params = dict(_force_fixed_vincode(params or {}) or {})
     fixed_params["vincode"] = _fixed_vincode()
     fixed_params["deviceVin"] = _fixed_vincode()
@@ -94,7 +118,7 @@ def query_vehicle_by_vincode_tool(
 
     try:
         response_data = _client(base_url).query_vehicle_by_vincode(
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -114,7 +138,7 @@ def query_vehicle_by_vincode_v2_tool(
         return validation_error
     try:
         response_data = _client(base_url).query_vehicle_by_vincode_v2(
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -147,7 +171,7 @@ def query_work_hours_statistic_info_by_vehicle_tool(
         response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -174,7 +198,7 @@ def query_work_hours_statistic_info_by_vehicle_v2_tool(
         response_data = _client(base_url).query_work_hours_statistic_info_by_vehicle_v2(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -209,7 +233,7 @@ def query_planned_maintained_item_page_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             itemName=item_name,
         )
     except ValueError as exc:
@@ -238,7 +262,7 @@ def query_planned_maintained_item_page_v2_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             itemName=item_name,
         )
     except ValueError as exc:
@@ -262,7 +286,7 @@ def get_customer_condition_tool(
 
     try:
         response_data = _client(base_url).get_customer_condition(
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -304,7 +328,7 @@ def query_work_hours_page_new_by_date_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             orderAsc=order_asc,
         )
     except ValueError as exc:
@@ -339,7 +363,7 @@ def query_work_hours_page_new_by_date_v2_tool(
             current=current,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             orderAsc=order_asc,
         )
     except ValueError as exc:
@@ -373,7 +397,7 @@ def get_worktime_calendar_list_from_doris_tool(
             language=language,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -400,7 +424,7 @@ def get_worktime_calendar_list_from_doris_v2_tool(
             language=language,
             beginDate=begin_date,
             endDate=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -433,7 +457,7 @@ def query_trace_tool(
             language=language,
             beginTime=begin_time,
             endTime=end_time,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -460,7 +484,7 @@ def query_trace_v2_tool(
             language=language,
             beginTime=begin_time,
             endTime=end_time,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -490,7 +514,7 @@ def query_customer_vehicle_page_tool(
             size=size,
             current=current,
             id=None,
-            searchKey=_fixed_vincode(),
+            searchKey=_resolve_search_key(search_key),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -515,7 +539,7 @@ def query_customer_vehicle_page_v2_tool(
             size=size,
             current=current,
             id=None,
-            searchKey=_fixed_vincode(),
+            searchKey=_resolve_search_key(search_key),
         )
     except ValueError as exc:
         return _error(str(exc))
@@ -546,7 +570,7 @@ def query_device_fault_page_tool(
             total=total,
             size=size,
             current=current,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             faultcode=faultcode,
             starttime=starttime,
             endtime=endtime,
@@ -575,7 +599,7 @@ def query_device_fault_page_v2_tool(
             total=total,
             size=size,
             current=current,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             faultcode=faultcode,
             starttime=starttime,
             endtime=endtime,
@@ -609,7 +633,7 @@ def query_core_info_tool(
         response_data = _client(base_url).query_core_info(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -636,7 +660,7 @@ def query_core_info_v2_tool(
         response_data = _client(base_url).query_core_info_v2(
             begin_date=begin_date,
             end_date=end_date,
-            vincode=_fixed_vincode(),
+            vincode=_resolve_vincode(vincode),
             token=token,
             language=language,
         )
@@ -691,7 +715,7 @@ def query_work_rate_tool(
     response_data = _call_client_method(
         "query_work_rate",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         query_date=query_date,
     )
     return _wrap_response(response_data)
@@ -704,7 +728,7 @@ def get_work_condition_header_tool(
     response_data = _call_client_method(
         "get_work_condition_header",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
     )
     return _wrap_response(response_data)
 
@@ -718,7 +742,7 @@ def get_current_work_condition_tool(
     response_data = _call_client_method(
         "get_customer_condition",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         token=token,
         language=language,
     )
@@ -734,7 +758,7 @@ def query_current_location_tool(
     response_data = _call_client_method(
         "query_current_location",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         token=token,
         language=language,
     )
@@ -755,7 +779,7 @@ def query_history_work_condition_tool(
     response_data = _call_client_method(
         "query_history_work_condition",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         start_time=start_time,
         end_time=end_time,
         current=current,
@@ -771,7 +795,7 @@ def get_env_pro_data_tool(
     response_data = _call_client_method(
         "get_env_pro_data",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
     )
     return _wrap_response(response_data)
 
@@ -790,7 +814,7 @@ def query_env_pro_history_data_tool(
     response_data = _call_client_method(
         "query_env_pro_history_data",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         start_time=start_time,
         end_time=end_time,
         current=current,
@@ -813,7 +837,7 @@ def query_vehicle_alarm_tool(
     response_data = _call_client_method(
         "query_vehicle_alarm",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
         start_time=start_time,
         end_time=end_time,
         current=current,
@@ -829,7 +853,7 @@ def query_indicator_data_tool(
     response_data = _call_client_method(
         "query_indicator_data",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
     )
     return _wrap_response(response_data)
 
@@ -841,6 +865,6 @@ def query_tags_data_tool(
     response_data = _call_client_method(
         "query_tags_data",
         base_url=base_url,
-        vincode=_fixed_vincode(),
+        vincode=_resolve_vincode(vincode),
     )
     return _wrap_response(response_data)

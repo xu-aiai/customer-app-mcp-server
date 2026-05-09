@@ -136,6 +136,8 @@ POST http://10.90.21.125:9085/auth/oauth/token
 
 - 海外继续走原 `customer_app` 体系
 - 国内走独立 `domestic_telematics` 体系
+- 国内模式默认固定查询预置 VIN
+- 海外模式保留按入参查询单台或多台设备的能力
 
 其中 `query_customer_vehicle_page` 会退化为基于 `getBaseInfo` 的单车/批量档案封装分页结果。暂未提供国内文档的接口在 `domestic` 模式下会直接返回“暂不支持”。
 

@@ -12,7 +12,11 @@ from clients.telematics_bridge import (
     OVERSEAS_PROVIDER,
     get_telematics_provider,
 )
-from tools.customer_app_tools import query_vehicle_by_vincode_tool
+from tools.customer_app_tools import (
+    FIXED_VINCODE,
+    _resolve_vincode,
+    query_vehicle_by_vincode_tool,
+)
 
 
 class FakeDomesticClient:
@@ -73,6 +77,20 @@ class DomesticTelematicsTest(unittest.TestCase):
             result["data"]["data"][0]["companyName"],
             "徐工",
         )
+
+    def test_domestic_mode_uses_fixed_vincode(self):
+        with patch(
+            "tools.customer_app_tools.get_telematics_provider",
+            return_value=DOMESTIC_PROVIDER,
+        ):
+            self.assertEqual(_resolve_vincode("VIN001"), FIXED_VINCODE)
+
+    def test_overseas_mode_uses_requested_vincode(self):
+        with patch(
+            "tools.customer_app_tools.get_telematics_provider",
+            return_value=OVERSEAS_PROVIDER,
+        ):
+            self.assertEqual(_resolve_vincode("VIN001"), "VIN001")
 
     def test_query_type_inference(self):
         self.assertEqual(

@@ -92,7 +92,12 @@ def _force_fixed_vincode(value: Optional[Any]) -> Optional[Any]:
 def refresh_customer_app_token_on_startup() -> None:
     """Fetch customer app token on server startup and persist it to config."""
     try:
-        if get_telematics_provider() == DOMESTIC_PROVIDER:
+        provider = get_telematics_provider()
+        logger.info(
+            "Telematics provider on startup: %s",
+            "domestic" if provider == DOMESTIC_PROVIDER else "overseas",
+        )
+        if provider == DOMESTIC_PROVIDER:
             logger.info("Skip customer app token refresh: domestic telematics is enabled.")
             return
         config = load_customer_app_config()
@@ -113,7 +118,7 @@ def refresh_customer_app_token_on_startup() -> None:
 # Add an addition tool
 @mcp.tool()
 def calculator(python_expression: str) -> dict:
-    """数学表达式计算工具，用于精确计算 Python 数学表达式。
+    """Calculate a Python math expression / 计算 Python 数学表达式。
 
     适用问题：
     - 计算加减乘除、幂运算、取整、随机数等数学结果。
@@ -132,18 +137,19 @@ def query_vehicle_by_vincode(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """通过 vincode 查询车辆详情，用于按设备编码/车架号获取单台车辆基础信息。
+    """Query vehicle details by VIN / 通过 VIN 查询车辆详情。
 
     适用问题：
     - 查询某个 VIN/车架号/设备编码对应的车辆信息。
     - 查看单台设备的终端号、车型、设备类型、实时定位概览等基础资料。
+    - 国内模式固定查询预置 VIN；海外模式可按传入 VIN 查询。
 
     API: GET /apiForAi/customerVehicle/{vincode}
     必填参数：
-    - vincode: 设备编码/车架号。
+    - vincode: 设备编码/车架号 / Device VIN or chassis number.
     """
     return query_vehicle_by_vincode_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -159,7 +165,7 @@ def query_work_hours_statistic_info_by_vehicle(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """按车统计运行时间汇总信息，用于查询某台设备在日期范围内的工时统计总览。
+    """Query work-hour summary by vehicle / 按车查询工时汇总。
 
     适用问题：
     - 统计某台车一段时间内的运行时间、工作时间、怠速时间。
@@ -169,12 +175,12 @@ def query_work_hours_statistic_info_by_vehicle(
     必填参数：
     - begin_date: 开始日期，格式 yyyy-MM-dd。
     - end_date: 结束日期，格式 yyyy-MM-dd。
-    - vincode: 设备编码/车架号。
+    - vincode: 设备编码/车架号 / Device VIN or chassis number.
     """
     return query_work_hours_statistic_info_by_vehicle_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -194,7 +200,7 @@ def query_planned_maintained_item_page(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """计划维保分页查询，用于查询车辆/设备的计划保养、计划维护提醒列表。
+    """Query planned maintenance reminders / 查询计划维保提醒。
 
     适用问题：
     - 查询某台车的计划维保记录。
@@ -205,7 +211,7 @@ def query_planned_maintained_item_page(
     可选参数：
     - current/size/total: 分页参数。
     - begin_date/end_date: 提醒开始/结束日期，格式 yyyy-MM-dd。
-    - vincode: 车架号。
+    - vincode: 车架号 / Vehicle VIN.
     - item_name: 计划名称模糊搜索条件。
     """
     return query_planned_maintained_item_page_tool(
@@ -214,7 +220,7 @@ def query_planned_maintained_item_page(
         current=current,
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         item_name=item_name,
         token=token,
         language=language,
@@ -229,18 +235,18 @@ def get_customer_condition(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """获取当前工况，用于查询某台车辆/设备的当前实时工况状态。
+    """Get current work condition / 获取当前工况。
 
     适用问题：
     - 查看某台设备当前工况。
     - 查询车辆当前运行状态、在线状态或实时作业状态。
 
-    API: GET /customerApp/getCustomerCondition
+    API: Overseas `GET /customerApp/getCustomerCondition`; domestic mode maps to `getCurrent`.
     必填参数：
-    - vincode: 车架号/设备编码。
+    - vincode: 车架号/设备编码 / VIN or device code.
     """
     return get_customer_condition_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -260,7 +266,7 @@ def query_work_hours_page_new_by_date(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """按车按日期分页查询运行时间明细，用于查看某台设备每天的工时明细。
+    """Query work-hour details by date / 按日期查询工时明细。
 
     适用问题：
     - 查询某台车每天的运行时间、工作时间、怠速时间明细。
@@ -271,7 +277,7 @@ def query_work_hours_page_new_by_date(
     必填参数：
     - begin_date: 开始日期，格式 yyyy-MM-dd。
     - end_date: 结束日期，格式 yyyy-MM-dd。
-    - vincode: 设备编码。
+    - vincode: 设备编码 / Device VIN.
     可选参数：
     - current/size/total: 分页参数。
     - order_asc: 排序顺序，1 表示时间正序，默认倒序。
@@ -279,7 +285,7 @@ def query_work_hours_page_new_by_date(
     return query_work_hours_page_new_by_date_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         total=total,
         size=size,
         current=current,
@@ -299,7 +305,7 @@ def get_worktime_calendar_list_from_doris(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """查询客户端设备工作日历列表，用于查看某台设备在日期范围内的工作日历。
+    """Query worktime calendar / 查询工作日历。
 
     适用问题：
     - 查询设备某段时间的工作日历。
@@ -310,12 +316,12 @@ def get_worktime_calendar_list_from_doris(
     必填参数：
     - begin_date: 开始日期，格式 yyyy-MM-dd。
     - end_date: 结束日期，格式 yyyy-MM-dd。
-    - vincode: 设备编码。
+    - vincode: 设备编码 / Device VIN.
     """
     return get_worktime_calendar_list_from_doris_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -331,7 +337,7 @@ def query_trace(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """设备轨迹查询，用于查询某台设备在指定时间段内的历史定位轨迹点。
+    """Query trace playback / 查询设备轨迹。
 
     适用问题：
     - 查询车辆/设备轨迹。
@@ -342,12 +348,12 @@ def query_trace(
     必填参数：
     - begin_time: 开始时间，格式 yyyy-MM-dd HH:mm:ss。
     - end_time: 结束时间，格式 yyyy-MM-dd HH:mm:ss。
-    - vincode: 设备编码。
+    - vincode: 设备编码 / Device VIN.
     """
     return query_trace_tool(
         begin_time=begin_time,
         end_time=end_time,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -365,7 +371,7 @@ def query_customer_vehicle_page(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """客户设备列表分页查询，用于查询客户名下车辆/设备列表。
+    """Query customer vehicle list / 查询客户设备列表。
 
     适用问题：
     - 查询客户设备列表。
@@ -376,14 +382,14 @@ def query_customer_vehicle_page(
     可选参数：
     - current/size/total: 分页参数。
     - vehicle_id: 车辆 id，对应接口参数 id。
-    - search_key: 设备名称/设备编码搜索关键字。
+    - search_key: 设备名称/设备编码搜索关键字 / Search keyword.
     """
     return query_customer_vehicle_page_tool(
         total=total,
         size=size,
         current=current,
-        vehicle_id=None,
-        search_key=_fixed_vincode(),
+        vehicle_id=vehicle_id,
+        search_key=search_key,
         token=token,
         language=language,
         base_url=base_url,
@@ -403,7 +409,7 @@ def query_device_fault_page(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """故障告警分页查询，用于查询设备故障码、故障告警记录列表。
+    """Query fault alarms / 查询故障告警。
 
     适用问题：
     - 查询某台设备的故障告警。
@@ -413,7 +419,7 @@ def query_device_fault_page(
     API: GET /apiForAi/deviceFaultPage
     可选参数：
     - current/size/total: 分页参数。
-    - vincode: 设备编码。
+    - vincode: 设备编码 / Device VIN.
     - faultcode: 故障代码。
     - starttime/endtime: 开始/结束时间。
     """
@@ -421,7 +427,7 @@ def query_device_fault_page(
         total=total,
         size=size,
         current=current,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         faultcode=faultcode,
         starttime=starttime,
         endtime=endtime,
@@ -437,10 +443,10 @@ def query_work_rate(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """月度开工率统计，用于查询某台设备在指定月份的开工率。"""
+    """Query monthly work rate / 查询月度开工率。"""
     return query_work_rate_tool(
         query_date=query_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -450,9 +456,9 @@ def get_work_condition_header(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """工况动态表头查询，用于获取工况字段的中文名、单位和字典解释。"""
+    """Query work-condition headers / 查询工况动态表头。"""
     return get_work_condition_header_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -464,9 +470,9 @@ def get_current_work_condition(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """当前工况查询，用于获取设备最新工况数据。"""
+    """Query current work condition / 查询当前工况。"""
     return get_current_work_condition_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -480,9 +486,9 @@ def query_current_location(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """当前位置查询，用于获取设备最新定位位置、经纬度和 GPS 时间。"""
+    """Query current location / 查询当前位置。"""
     return query_current_location_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -498,13 +504,13 @@ def query_history_work_condition(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """历史工况查询，用于获取单台设备时间段内历史工况分页数据。"""
+    """Query historical work condition / 查询历史工况。"""
     return query_history_work_condition_tool(
         start_time=start_time,
         end_time=end_time,
         current=current,
         size=size,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -514,9 +520,9 @@ def get_env_pro_data(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """环保当前工况查询，用于获取单车最新环保工况数据。"""
+    """Query current environmental data / 查询环保当前工况。"""
     return get_env_pro_data_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -530,13 +536,13 @@ def query_env_pro_history_data(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """环保历史工况查询，用于获取单车时间段内环保工况分页数据。"""
+    """Query historical environmental data / 查询环保历史工况。"""
     return query_env_pro_history_data_tool(
         start_time=start_time,
         end_time=end_time,
         current=current,
         size=size,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -550,13 +556,13 @@ def query_vehicle_alarm(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """故障报警查询，用于获取单车设备时间段故障分页数据。"""
+    """Query vehicle alarms / 查询设备故障报警。"""
     return query_vehicle_alarm_tool(
         start_time=start_time,
         end_time=end_time,
         current=current,
         size=size,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -566,9 +572,9 @@ def query_indicator_data(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """设备指标数据查询，用于批量获取设备指标排行和分布标签。"""
+    """Query indicator data / 查询设备指标数据。"""
     return query_indicator_data_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -578,9 +584,9 @@ def query_tags_data(
     vincode: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """设备标签数据查询，用于批量获取设备类型、在线状态、ACC 状态等标签信息。"""
+    """Query tag data / 查询设备标签数据。"""
     return query_tags_data_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         base_url=base_url,
     )
 
@@ -594,7 +600,7 @@ def query_core_info(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """查询核心统计信息（通用），用于获取某台设备在日期范围内的核心指标汇总。
+    """Query core statistics / 查询核心统计信息。
 
     适用问题：
     - 查询车辆核心统计指标。
@@ -605,12 +611,12 @@ def query_core_info(
     必填参数：
     - begin_date: 开始日期，格式 yyyy-MM-dd。
     - end_date: 结束日期，格式 yyyy-MM-dd。
-    - vincode: 设备编码/车架号。
+    - vincode: 设备编码/车架号 / Device VIN or chassis number.
     """
     return query_core_info_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -632,7 +638,7 @@ def prepare_fault_repair(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """准备故障报修信息，不直接创建 CRM 工单。
+    """Prepare fault-repair payload / 准备故障报修提交参数。
 
     适用问题：
     - 用户要新报修，需要抽取/补齐整机编码、故障描述、现场联系人和电话。
@@ -673,7 +679,7 @@ def submit_fault_repair_order(
     detail_address: Optional[str] = None,
     source: int = 7,
 ) -> dict:
-    """确认后创建 CRM+ 维修服务单。
+    """Submit a repair order to CRM+ / 提交 CRM+ 维修工单。
 
     适用问题：
     - 用户已确认 prepare_fault_repair 返回的 submitWorkorder payload。
@@ -705,7 +711,7 @@ def list_service_orders(
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
 ) -> dict:
-    """查询当前用户已有工单/服务单列表，默认返回最近 3 条。
+    """List existing service orders / 查询已有服务单列表。
 
     适用问题：
     - 我的工单到哪了。
@@ -743,7 +749,7 @@ def get_service_order_detail(
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
 ) -> dict:
-    """查询单条已有工单/服务单详情。
+    """Get service order detail / 查询单条服务单详情。
 
     适用问题：
     - 查工单 12345 的详情。
@@ -775,9 +781,9 @@ def query_vehicle_by_vincode_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """通过 vincode 查询车辆详情 v2。API: GET /apiForAi/v2/customerVehicle/{vincode}。"""
+    """Query vehicle details by VIN v2 / 通过 VIN 查询车辆详情 v2。"""
     return query_vehicle_by_vincode_v2_tool(
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -793,11 +799,11 @@ def query_work_hours_statistic_info_by_vehicle_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """按车统计运行时间汇总信息 v2。API: POST /apiForAi/v2/queryWorkHoursStatisticInfoByVehicle。"""
+    """Query work-hour summary by vehicle v2 / 按车查询工时汇总 v2。"""
     return query_work_hours_statistic_info_by_vehicle_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -817,14 +823,14 @@ def query_planned_maintained_item_page_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """计划维保分页查询 v2。API: GET /apiForAi/v2/queryPlannedMaintainedItemPage。"""
+    """Query planned maintenance reminders v2 / 查询计划维保提醒 v2。"""
     return query_planned_maintained_item_page_v2_tool(
         total=total,
         size=size,
         current=current,
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         item_name=item_name,
         token=token,
         language=language,
@@ -845,11 +851,11 @@ def query_work_hours_page_new_by_date_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """按车按日期分页查询运行时间明细 v2。API: GET /apiForAi/v2/queryWorkHoursPageNewByDate。"""
+    """Query work-hour details by date v2 / 按日期查询工时明细 v2。"""
     return query_work_hours_page_new_by_date_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         total=total,
         size=size,
         current=current,
@@ -869,11 +875,11 @@ def get_worktime_calendar_list_from_doris_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """查询客户端设备工作日历列表 v2。API: GET /apiForAi/v2/getWorktimeCalendarListFromDoris。"""
+    """Query worktime calendar v2 / 查询工作日历 v2。"""
     return get_worktime_calendar_list_from_doris_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -889,11 +895,11 @@ def query_trace_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """设备轨迹查询 v2。API: GET /apiForAi/v2/trace。"""
+    """Query trace playback v2 / 查询设备轨迹 v2。"""
     return query_trace_v2_tool(
         begin_time=begin_time,
         end_time=end_time,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -911,13 +917,13 @@ def query_customer_vehicle_page_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """客户设备列表分页查询 v2。API: GET /apiForAi/v2/customerVehiclePage。"""
+    """Query customer vehicle list v2 / 查询客户设备列表 v2。"""
     return query_customer_vehicle_page_v2_tool(
         total=total,
         size=size,
         current=current,
-        vehicle_id=None,
-        search_key=_fixed_vincode(),
+        vehicle_id=vehicle_id,
+        search_key=search_key,
         token=token,
         language=language,
         base_url=base_url,
@@ -937,12 +943,12 @@ def query_device_fault_page_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """故障告警分页查询 v2。API: GET /apiForAi/v2/deviceFaultPage。"""
+    """Query fault alarms v2 / 查询故障告警 v2。"""
     return query_device_fault_page_v2_tool(
         total=total,
         size=size,
         current=current,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         faultcode=faultcode,
         starttime=starttime,
         endtime=endtime,
@@ -961,11 +967,11 @@ def query_core_info_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """查询核心统计信息（通用）v2。API: POST /apiForAi/v2/queryCoreInfo。"""
+    """Query core statistics v2 / 查询核心统计信息 v2。"""
     return query_core_info_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
-        vincode=_fixed_vincode(),
+        vincode=vincode,
         token=token,
         language=language,
         base_url=base_url,
@@ -983,7 +989,7 @@ def call_service_order_union(
     base_url: Optional[str] = None,
     service_base_url: Optional[str] = None,
 ) -> dict:
-    """调用保养&报修统一工单接口。
+    """Call serviceOrderUnion API / 调用统一工单接口。
 
     文档 base: http://10.90.21.125:9085/ixcmg
     endpoint 示例：getPage、add、getDevice、getDeviceSrvOrder、cancelSrvOrder，
