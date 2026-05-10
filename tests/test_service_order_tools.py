@@ -55,6 +55,10 @@ class ServiceOrderToolsTokenTest(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(FakeServiceOrderClient.last_app_token, "customer-app-token")
         self.assertEqual(FakeServiceOrderClient.last_vincode, FIXED_VINCODE)
+        self.assertEqual(
+            result["data"]["records"][0]["status_label"],
+            "待派工",
+        )
 
     def test_list_orders_allows_config_token_when_no_token_argument(self):
         with patch(
@@ -100,6 +104,18 @@ class ServiceOrderToolsTokenTest(unittest.TestCase):
             result = get_service_order_detail_tool(order_id="order-1")
 
         self.assertFalse(result["success"])
+
+    def test_list_orders_localizes_labels_in_english(self):
+        with patch(
+            "tools.service_order_tools.ServiceOrderClient",
+            FakeServiceOrderClient,
+        ):
+            result = list_service_orders_tool(language="en-US")
+
+        self.assertTrue(result["success"])
+        record = result["data"]["records"][0]
+        self.assertEqual(record["status_label"], "Pending assignment")
+        self.assertEqual(record["orderType_label"], "Repair")
 
 
 if __name__ == "__main__":

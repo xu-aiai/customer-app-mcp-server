@@ -707,6 +707,7 @@ def call_service_order_union_tool(
 def query_work_rate_tool(
     query_date: str,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     validation_error = _require(query_date, "query_date")
@@ -717,18 +718,21 @@ def query_work_rate_tool(
         base_url=base_url,
         vincode=_resolve_vincode(vincode),
         query_date=query_date,
+        language=language,
     )
     return _wrap_response(response_data)
 
 
 def get_work_condition_header_tool(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     response_data = _call_client_method(
         "get_work_condition_header",
         base_url=base_url,
         vincode=_resolve_vincode(vincode),
+        language=language,
     )
     return _wrap_response(response_data)
 
@@ -771,6 +775,7 @@ def query_history_work_condition_tool(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
@@ -784,18 +789,21 @@ def query_history_work_condition_tool(
         end_time=end_time,
         current=current,
         size=size,
+        language=language,
     )
     return _wrap_response(response_data)
 
 
 def get_env_pro_data_tool(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     response_data = _call_client_method(
         "get_env_pro_data",
         base_url=base_url,
         vincode=_resolve_vincode(vincode),
+        language=language,
     )
     return _wrap_response(response_data)
 
@@ -806,6 +814,7 @@ def query_env_pro_history_data_tool(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
@@ -819,6 +828,7 @@ def query_env_pro_history_data_tool(
         end_time=end_time,
         current=current,
         size=size,
+        language=language,
     )
     return _wrap_response(response_data)
 
@@ -829,6 +839,7 @@ def query_vehicle_alarm_tool(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     validation_error = _require(start_time, "start_time") or _require(end_time, "end_time")
@@ -842,29 +853,34 @@ def query_vehicle_alarm_tool(
         end_time=end_time,
         current=current,
         size=size,
+        language=language,
     )
     return _wrap_response(response_data)
 
 
 def query_indicator_data_tool(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     response_data = _call_client_method(
         "query_indicator_data",
         base_url=base_url,
         vincode=_resolve_vincode(vincode),
+        language=language,
     )
     return _wrap_response(response_data)
 
 
 def query_tags_data_tool(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     response_data = _call_client_method(
         "query_tags_data",
         base_url=base_url,
         vincode=_resolve_vincode(vincode),
+        language=language,
     )
     return _wrap_response(response_data)

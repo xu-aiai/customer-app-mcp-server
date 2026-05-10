@@ -337,7 +337,9 @@ class DomesticTelematicsClient:
         self,
         vincode: str,
         query_date: str,
+        language: Optional[str] = None,
     ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网开工率统计",
             "/third-api/vehicle/getWorkRate",
@@ -347,7 +349,12 @@ class DomesticTelematicsClient:
             },
         )
 
-    def get_work_condition_header(self, vincode: str) -> dict:
+    def get_work_condition_header(
+        self,
+        vincode: str,
+        language: Optional[str] = None,
+    ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网工况表头",
             "/third-api/vehicle/getHeader",
@@ -361,7 +368,9 @@ class DomesticTelematicsClient:
         end_time: str,
         current: int = 1,
         size: int = 20,
+        language: Optional[str] = None,
     ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网历史工况",
             "/third-api/vehicle/getHistory",
@@ -374,7 +383,12 @@ class DomesticTelematicsClient:
             },
         )
 
-    def get_env_pro_data(self, vincode: str) -> dict:
+    def get_env_pro_data(
+        self,
+        vincode: str,
+        language: Optional[str] = None,
+    ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网环保当前工况",
             "/third-api/vehicle/getEnvProData",
@@ -388,7 +402,9 @@ class DomesticTelematicsClient:
         end_time: str,
         current: int = 1,
         size: int = 20,
+        language: Optional[str] = None,
     ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网环保历史工况",
             "/third-api/vehicle/getEnvProHistoryData",
@@ -408,7 +424,9 @@ class DomesticTelematicsClient:
         end_time: str,
         current: int = 1,
         size: int = 20,
+        language: Optional[str] = None,
     ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网故障报警",
             "/third-api/vehicle/getVehicleAlarm",
@@ -421,14 +439,24 @@ class DomesticTelematicsClient:
             },
         )
 
-    def query_indicator_data(self, vincode: str) -> dict:
+    def query_indicator_data(
+        self,
+        vincode: str,
+        language: Optional[str] = None,
+    ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网设备指标数据",
             "/third-api/vehicle/getIndicatorData",
             {"vincode": vincode},
         )
 
-    def query_tags_data(self, vincode: str) -> dict:
+    def query_tags_data(
+        self,
+        vincode: str,
+        language: Optional[str] = None,
+    ) -> dict:
+        del language
         return self._signed_get(
             "国内车联网设备标签数据",
             "/third-api/vehicle/getTagsData",

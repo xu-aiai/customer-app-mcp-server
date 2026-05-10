@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from clients.crmplus_client import create_repair_order
 from clients.telematics_bridge import create_telematics_client
+from i18n import t
 
 CustomerAppClient = create_telematics_client
 
@@ -32,10 +33,10 @@ def _error(message: str, **extra: Any) -> dict:
     }
 
 
-def _normalize_submit_error(message: str) -> str:
+def _normalize_submit_error(message: str, language: Optional[str] = None) -> str:
     cleaned = _text(message)
     if cleaned in {"", "-1", "0"}:
-        return "提交维修工单失败，请稍后重试。"
+        return t("fault_repair.submit_failed_generic", language=language)
     return cleaned
 
 
@@ -51,6 +52,10 @@ def _ok(action: str, message: str, **extra: Any) -> dict:
 
 def _text(value: Optional[Any]) -> str:
     return str(value or "").strip()
+
+
+def _is_english_language(language: Optional[str]) -> bool:
+    return str(language or "").lower().startswith("en")
 
 
 def _merge_state(
@@ -111,17 +116,29 @@ def _parse_message(message: str) -> dict:
     if phone_match:
         result["new_feedbacktel"] = phone_match.group(1)
 
-    vin_match = re.search(r"(?:整机编码|车架号|VIN|vin|设备编码)[:：\s]*([A-Za-z0-9_-]{5,})", message)
+    vin_match = re.search(
+        r"(?:整机编码|车架号|VIN|vin|设备编码|device\s*vin|device\s*code|chassis\s*number)[:：\s]*([A-Za-z0-9_-]{5,})",
+        message,
+        re.IGNORECASE,
+    )
     if vin_match:
         result["vincode"] = vin_match.group(1)
 
-    contact_match = re.search(r"(?:联系人|现场联系人|姓名)[:：\s]*([\u4e00-\u9fa5A-Za-z]{2,12})", message)
+    contact_match = re.search(
+        r"(?:联系人|现场联系人|姓名|contact|contact\s*person|name)[:：\s]*([\u4e00-\u9fa5A-Za-z]{2,24})",
+        message,
+        re.IGNORECASE,
+    )
     if contact_match:
         result["new_contact"] = contact_match.group(1)
 
-    fault_match = re.search(r"(?:故障|问题|现象|报修内容|故障描述)[:：\s]*(.{2,120})", message)
+    fault_match = re.search(
+        r"(?:故障|问题|现象|报修内容|故障描述|fault|issue|problem|symptom|fault description)[:：\s]*(.{2,160})",
+        message,
+        re.IGNORECASE,
+    )
     if fault_match:
-        result["fault_description"] = fault_match.group(1).strip()
+        result["fault_description"] = _clean_fault_description(fault_match.group(1))
     else:
         inferred_fault = _infer_fault_description(message)
         if inferred_fault:
@@ -129,12 +146,34 @@ def _parse_message(message: str) -> dict:
     return result
 
 
+def _clean_fault_description(value: str) -> str:
+    cleaned = _text(value)
+    cleaned = re.split(
+        r"(?:[;；\n]+|\b(?:contact|contact person|name|phone|tel|mobile|联系人|现场联系人|姓名|电话|手机号)[:：])",
+        cleaned,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    return cleaned.strip(" ，,。；;：:")
+
+
 def _infer_fault_description(message: str) -> str:
     cleaned = re.sub(r"(?<!\d)1[3-9]\d{9}(?!\d)", "", message)
-    cleaned = re.sub(r"(?:整机编码|车架号|VIN|vin|设备编码)[:：\s]*[A-Za-z0-9_-]{5,}", "", cleaned)
-    cleaned = re.sub(r"(?:联系人|现场联系人|姓名)[:：\s]*[\u4e00-\u9fa5A-Za-z]{2,12}", "", cleaned)
+    cleaned = re.sub(
+        r"(?:整机编码|车架号|VIN|vin|设备编码|device\s*vin|device\s*code|chassis\s*number)[:：\s]*[A-Za-z0-9_-]{5,}",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"(?:联系人|现场联系人|姓名|contact|contact\s*person|name)[:：\s]*[\u4e00-\u9fa5A-Za-z]{2,24}",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
     cleaned = re.sub(r"第\s*(?:一|二|三|1|2|3)\s*(?:台|辆|个|条|号)?", "", cleaned)
     cleaned = re.sub(r"(?:一|二|三|1|2|3)\s*(?:台|辆|个|条|号)", "", cleaned)
+    cleaned = re.sub(r"\b(?:first|second|third|1st|2nd|3rd)\b", "", cleaned, flags=re.IGNORECASE)
     fragments = [
         fragment.strip(" ，,。；;：:")
         for fragment in re.split(r"[\n，,。；;]", cleaned)
@@ -156,6 +195,24 @@ def _infer_fault_description(message: str) -> str:
         "高温",
         "没劲",
         "无力",
+        "broken",
+        "fail",
+        "failure",
+        "fault",
+        "issue",
+        "problem",
+        "alarm",
+        "error",
+        "cannot",
+        "can't",
+        "won't",
+        "not working",
+        "no power",
+        "no response",
+        "won't start",
+        "can't start",
+        "leak",
+        "noise",
     )
     for fragment in fragments:
         if 2 <= len(fragment) <= 80 and any(keyword in fragment for keyword in fault_keywords):
@@ -184,15 +241,17 @@ def _parse_device_index(message: str, device_count: int) -> Optional[int]:
     if not text:
         return None
 
-    if device_count == 1 and re.search(r"这台|那台|这个|那个|它", text):
+    if device_count == 1 and re.search(r"这台|那台|这个|那个|它|this one|that one|it", text, re.IGNORECASE):
         return 0
 
     patterns = [
         r"第\s*(?P<num>[0-9]{1,2}|[零一二三四五六七八九十两]+)\s*(?:台|辆|个|条|号|辆车|台车|个车)?",
         r"(?<!\d)(?P<num>[0-9]{1,2}|[零一二三四五六七八九十两]+)\s*(?:台|辆|个|条|号|辆车|台车|个车)(?!\w)",
+        r"\b(?P<num>[0-9]{1,2})(?:st|nd|rd|th)\b",
+        r"\b(?P<num>first|second|third)\b",
     ]
     for pattern in patterns:
-        match = re.search(pattern, text)
+        match = re.search(pattern, text, re.IGNORECASE)
         if not match:
             continue
         index = _parse_ordinal_number(match.group("num"))
@@ -208,6 +267,16 @@ def _parse_ordinal_number(value: str) -> Optional[int]:
     cleaned = _text(value)
     if not cleaned:
         return None
+    lower = cleaned.lower()
+    english_numerals = {
+        "first": 1,
+        "second": 2,
+        "third": 3,
+    }
+    if lower in english_numerals:
+        return english_numerals[lower]
+    if lower.endswith(("st", "nd", "rd", "th")) and lower[:-2].isdigit():
+        return int(lower[:-2])
     if cleaned.isdigit():
         return int(cleaned)
     numerals = {
@@ -310,6 +379,11 @@ def _missing_fields(state: dict) -> List[str]:
     return [field for field in REQUIRED_FIELDS if not state.get(field)]
 
 
+def _join_labels(values: Sequence[str], language: Optional[str] = None) -> str:
+    separator = ", " if str(language or "").lower().startswith("en") else "、"
+    return separator.join(values)
+
+
 def _pick_vehicle_profile(detail_result: dict) -> dict:
     """Pick vehicle profile from old and new customer-app detail response shapes."""
     if not isinstance(detail_result, dict):
@@ -385,17 +459,20 @@ def _device_summary(device: dict) -> dict:
     }
 
 
-def _enrich_devices(devices: List[dict]) -> List[dict]:
+def _enrich_devices(devices: List[dict], language: Optional[str] = None) -> List[dict]:
     enriched: List[dict] = []
     for index, device in enumerate(devices, start=1):
         item = dict(device)
         item["index"] = index
-        item["label"] = f"第{index}辆"
+        item["label"] = f"Device #{index}" if _is_english_language(language) else f"第{index}辆"
         enriched.append(item)
     return enriched
 
 
-def _validate_or_resolve_vincode(state: dict) -> tuple[str, Optional[dict]]:
+def _validate_or_resolve_vincode(
+    state: dict,
+    language: Optional[str] = None,
+) -> tuple[str, Optional[dict]]:
     vincode = _text(state.get("vincode"))
     devices = state.get("devices")
     if not vincode:
@@ -407,16 +484,16 @@ def _validate_or_resolve_vincode(state: dict) -> tuple[str, Optional[dict]]:
         if re.search(r"[\u4e00-\u9fa5]", vincode) or not _is_probable_vincode(vincode):
             return "", {
                 "action": "ask_missing_info",
-                "message": "没找到固定设备，无法进行故障报修。",
+                "message": t("fault_repair.device_not_found", language=language),
             }
         return "", {
             "action": "ask_missing_info",
-            "message": "没找到固定设备，无法进行故障报修。",
+            "message": t("fault_repair.device_not_found", language=language),
         }
     if not _is_probable_vincode(vincode):
         return "", {
             "action": "ask_missing_info",
-            "message": "设备编码格式不正确，请说完整设备编码。",
+            "message": t("fault_repair.invalid_vincode", language=language),
         }
     return vincode, None
 
@@ -447,7 +524,7 @@ def _build_submit_payload(state: dict, profile: dict) -> dict:
         or ""
     )
     return {
-        "value": "确认",
+        "value": t("fault_repair.confirm_value", language=state.get("language")),
         "action": "confirm_work_order",
         "type": "submitWorkorder",
         "deviceVin": state["vincode"],
@@ -487,15 +564,16 @@ def prepare_fault_repair_tool(
         new_contact=new_contact,
         new_feedbacktel=new_feedbacktel,
     )
+    state["language"] = language
     state["vincode"] = _fixed_vincode()
     state.pop("devices", None)
 
     try:
         client = CustomerAppClient(base_url=base_url)
     except Exception:
-        return _error("暂时无法初始化设备服务，请稍后再试。", state=state)
+        return _error(t("fault_repair.init_failed", language=language), state=state)
 
-    resolved_vincode, validation_error = _validate_or_resolve_vincode(state)
+    resolved_vincode, validation_error = _validate_or_resolve_vincode(state, language=language)
     if validation_error:
         state["vincode"] = ""
         return _error(
@@ -507,7 +585,7 @@ def prepare_fault_repair_tool(
         state["vincode"] = resolved_vincode
 
     if not state["vincode"]:
-        return _error("固定设备编码缺失，无法进行故障报修。", state=state)
+        return _error(t("fault_repair.fixed_vincode_missing", language=language), state=state)
 
     try:
         detail_result = client.query_vehicle_by_vincode(
@@ -516,10 +594,10 @@ def prepare_fault_repair_tool(
             language=language,
         )
     except ValueError:
-        return _error("固定设备编码不正确，无法进行故障报修。", state=state)
+        return _error(t("fault_repair.fixed_vincode_invalid", language=language), state=state)
     if _api_failed(detail_result):
         return _error(
-            "没找到固定设备，无法进行故障报修。",
+            t("fault_repair.device_not_found", language=language),
             state=state,
         )
 
@@ -559,14 +637,18 @@ def prepare_fault_repair_tool(
     missing = _missing_fields(state)
     if missing:
         labels = {
-            "fault_description": "故障描述",
-            "new_contact": "现场联系人姓名",
-            "new_feedbacktel": "现场联系人电话",
-            "vincode": "整机编码",
+            "fault_description": t("fault_repair.field.fault_description", language=language),
+            "new_contact": t("fault_repair.field.new_contact", language=language),
+            "new_feedbacktel": t("fault_repair.field.new_feedbacktel", language=language),
+            "vincode": t("fault_repair.field.vincode", language=language),
         }
         return _ok(
             "ask_missing_info",
-            "请补充：" + "、".join(labels[field] for field in missing),
+            t(
+                "fault_repair.missing_fields_prefix",
+                language=language,
+                fields=_join_labels([labels[field] for field in missing], language=language),
+            ),
             missing_fields=missing,
             state=state,
         )
@@ -574,7 +656,7 @@ def prepare_fault_repair_tool(
     payload = _build_submit_payload(state, profile)
     return _ok(
         "confirm_submit",
-        "请确认报修信息并提交工单。",
+        t("fault_repair.confirm_submit", language=language),
         submit_payload=payload,
         state=state,
     )
@@ -588,6 +670,7 @@ def submit_fault_repair_order_tool(
     contact_phone: Optional[str] = None,
     detail_address: Optional[str] = None,
     source: int = 7,
+    language: Optional[str] = None,
 ) -> dict:
     """Create the CRM+ repair order after the submitWorkorder payload is confirmed."""
     payload = dict(payload or {})
@@ -610,7 +693,13 @@ def submit_fault_repair_order_tool(
         if not value
     ]
     if missing:
-        return _error("Missing required fields: " + ", ".join(missing))
+        return _error(
+            t(
+                "common.missing_required_fields",
+                language=language,
+                fields=", ".join(missing),
+            )
+        )
 
     try:
         result = create_repair_order(
@@ -622,11 +711,11 @@ def submit_fault_repair_order_tool(
             source=source,
         )
     except Exception as exc:
-        message = _normalize_submit_error(str(exc))
+        message = _normalize_submit_error(str(exc), language=language)
         return _error(message, action="submit_failed", response=message)
 
     return {
         "success": True,
-        "message": "维修服务单创建成功。",
+        "message": t("fault_repair.submit_success", language=language),
         "data": result,
     }

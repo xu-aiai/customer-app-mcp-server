@@ -16,6 +16,7 @@ sys.modules.setdefault("clients.crmplus_client", fake_crmplus_client)
 from tools.fault_repair_tools import (
     FIXED_VINCODE,
     prepare_fault_repair_tool,
+    _parse_ordinal_number,
     submit_fault_repair_order_tool,
 )
 
@@ -154,6 +155,49 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
         self.assertEqual(result["message"], "没找到固定设备，无法进行故障报修。")
         self.assertNotIn("very long stack trace", str(result))
 
+    def test_prepare_localizes_missing_fields_in_english(self):
+        fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
+
+        with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
+            result = prepare_fault_repair_tool(language="en-US")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["action"], "ask_missing_info")
+        self.assertEqual(
+            result["message"],
+            "Please provide: fault description, on-site contact name, on-site contact phone",
+        )
+
+    def test_prepare_localizes_confirm_response_in_english(self):
+        fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
+
+        with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
+            result = prepare_fault_repair_tool(
+                fault_description="GPS power failure",
+                new_contact="Alex",
+                new_feedbacktel="13800138000",
+                language="en-US",
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["message"], "Please confirm the repair details and submit the work order.")
+        self.assertEqual(result["submit_payload"]["value"], "Confirm")
+
+    def test_prepare_parses_english_fault_message(self):
+        fake = FakeCustomerAppClient(vehicle_detail=_detail_response())
+
+        with patch("tools.fault_repair_tools.CustomerAppClient", return_value=fake):
+            result = prepare_fault_repair_tool(
+                user_message="fault: engine won't start; contact: Alex; phone: 13800138000",
+                language="en-US",
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["action"], "confirm_submit")
+        self.assertEqual(result["submit_payload"]["faultDescription"], "engine won't start")
+        self.assertEqual(result["submit_payload"]["contactName"], "Alex")
+        self.assertEqual(result["submit_payload"]["contactPhone"], "13800138000")
+
     def test_submit_order_ignores_payload_and_argument_device_vin(self):
         calls = []
 
@@ -194,6 +238,28 @@ class PrepareFaultRepairToolTest(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertEqual(result["action"], "submit_failed")
         self.assertEqual(result["message"], "提交维修工单失败，请稍后重试。")
+
+    def test_submit_order_failure_is_localized_in_english(self):
+        with patch(
+            "tools.fault_repair_tools.create_repair_order",
+            side_effect=ValueError("-1"),
+        ):
+            result = submit_fault_repair_order_tool(
+                payload={
+                    "faultDescription": "GPS power failure",
+                    "contactName": "Alex",
+                    "contactPhone": "18888106769",
+                },
+                language="en-US",
+            )
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["message"], "Failed to submit the repair work order. Please try again later.")
+
+    def test_english_ordinal_numbers_are_supported(self):
+        self.assertEqual(_parse_ordinal_number("first"), 1)
+        self.assertEqual(_parse_ordinal_number("1st"), 1)
+        self.assertEqual(_parse_ordinal_number("third"), 3)
 
 
 class CRMPlusClientTest(unittest.TestCase):

@@ -117,7 +117,10 @@ def refresh_customer_app_token_on_startup() -> None:
 
 # Add an addition tool
 @mcp.tool()
-def calculator(python_expression: str) -> dict:
+def calculator(
+    python_expression: str,
+    language: Optional[str] = None,
+) -> dict:
     """Calculate a Python math expression / 计算 Python 数学表达式。
 
     适用问题：
@@ -127,6 +130,7 @@ def calculator(python_expression: str) -> dict:
     参数：
     - python_expression: Python 表达式字符串，可直接使用 math 和 random，不需要 import。
     """
+    del language
     return calculate_expression(python_expression)
 
 
@@ -441,12 +445,14 @@ def query_device_fault_page(
 def query_work_rate(
     query_date: str,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query monthly work rate / 查询月度开工率。"""
     return query_work_rate_tool(
         query_date=query_date,
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -454,11 +460,13 @@ def query_work_rate(
 @mcp.tool()
 def get_work_condition_header(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query work-condition headers / 查询工况动态表头。"""
     return get_work_condition_header_tool(
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -502,6 +510,7 @@ def query_history_work_condition(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query historical work condition / 查询历史工况。"""
@@ -511,6 +520,7 @@ def query_history_work_condition(
         current=current,
         size=size,
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -518,11 +528,13 @@ def query_history_work_condition(
 @mcp.tool()
 def get_env_pro_data(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query current environmental data / 查询环保当前工况。"""
     return get_env_pro_data_tool(
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -534,6 +546,7 @@ def query_env_pro_history_data(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query historical environmental data / 查询环保历史工况。"""
@@ -543,6 +556,7 @@ def query_env_pro_history_data(
         current=current,
         size=size,
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -554,6 +568,7 @@ def query_vehicle_alarm(
     current: int = 1,
     size: int = 20,
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query vehicle alarms / 查询设备故障报警。"""
@@ -563,6 +578,7 @@ def query_vehicle_alarm(
         current=current,
         size=size,
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -570,11 +586,13 @@ def query_vehicle_alarm(
 @mcp.tool()
 def query_indicator_data(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query indicator data / 查询设备指标数据。"""
     return query_indicator_data_tool(
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -582,11 +600,13 @@ def query_indicator_data(
 @mcp.tool()
 def query_tags_data(
     vincode: Optional[str] = None,
+    language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
     """Query tag data / 查询设备标签数据。"""
     return query_tags_data_tool(
         vincode=vincode,
+        language=language,
         base_url=base_url,
     )
 
@@ -678,6 +698,7 @@ def submit_fault_repair_order(
     contact_phone: Optional[str] = None,
     detail_address: Optional[str] = None,
     source: int = 7,
+    language: Optional[str] = None,
 ) -> dict:
     """Submit a repair order to CRM+ / 提交 CRM+ 维修工单。
 
@@ -697,6 +718,7 @@ def submit_fault_repair_order(
         contact_phone=contact_phone,
         detail_address=detail_address,
         source=source,
+        language=language,
     )
 
 

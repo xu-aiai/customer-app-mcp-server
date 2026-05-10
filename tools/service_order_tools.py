@@ -1,45 +1,7 @@
 from typing import Optional
 
 from clients.service_order import ServiceOrderClient
-
-
-STATUS_LABELS: dict[int, str] = {
-    0: "待派单",
-    1: "待派工",
-    2: "待接单",
-    3: "待预约",
-    4: "待出发",
-    5: "行程中",
-    6: "服务中",
-    7: "已完结",
-    8: "已完结",
-    10: "待评价",
-    100: "已评价",
-    500: "已取消",
-}
-
-ORDER_TYPE_LABELS: dict[int, str] = {
-    1: "维修",
-    2: "保养",
-}
-
-SOURCE_CHANNEL_LABELS: dict[str, str] = {
-    "1": "集团 400",
-    "2": "服务站 Portal",
-    "3": "铁三角 APP",
-    "4": "物联网",
-    "5": "CRM+",
-    "6": "系统自动",
-    "7": "客户 APP",
-    "8": "集团客户 APP",
-}
-
-SHUTDOWN_LABELS: dict[int, str] = {0: "否", 1: "是"}
-
-SERVICE_MODE_LABELS: dict[int, str] = {
-    1: "现场上门指导",
-    2: "远程指导",
-}
+from i18n import t
 
 COMPACT_FIELDS = (
     "id",
@@ -96,9 +58,9 @@ def _error(message: str) -> dict:
     }
 
 
-def _require(value: Optional[str], name: str) -> Optional[dict]:
+def _require(value: Optional[str], name: str, language: Optional[str] = None) -> Optional[dict]:
     if value is None or not str(value).strip():
-        return _error(f"{name} is required.")
+        return _error(t("common.required", language=language, name=name))
     return None
 
 
@@ -121,7 +83,7 @@ def _client(
     return ServiceOrderClient(base_url=base_url, service_base_url=service_base_url)
 
 
-def _compact_record(record: dict) -> dict:
+def _compact_record(record: dict, language: Optional[str] = None) -> dict:
     compact: dict = {}
     for field in COMPACT_FIELDS:
         value = record.get(field)
@@ -131,35 +93,68 @@ def _compact_record(record: dict) -> dict:
 
     status = compact.get("status")
     if isinstance(status, int):
-        compact["status_label"] = STATUS_LABELS.get(status, f"未知状态({status})")
+        compact["status_label"] = t(
+            f"service_order.status.{status}",
+            language=language,
+        )
+        if compact["status_label"] == f"service_order.status.{status}":
+            compact["status_label"] = t(
+                "common.unknown_status",
+                language=language,
+                value=status,
+            )
 
     order_type = compact.get("orderType")
     if isinstance(order_type, int):
-        compact["orderType_label"] = ORDER_TYPE_LABELS.get(
-            order_type,
-            f"未知类型({order_type})",
+        compact["orderType_label"] = t(
+            f"service_order.order_type.{order_type}",
+            language=language,
         )
+        if compact["orderType_label"] == f"service_order.order_type.{order_type}":
+            compact["orderType_label"] = t(
+                "common.unknown_type",
+                language=language,
+                value=order_type,
+            )
 
     source_channel = compact.get("sourceChannel")
     if source_channel is not None:
-        compact["sourceChannel_label"] = SOURCE_CHANNEL_LABELS.get(
-            str(source_channel),
-            f"未知渠道({source_channel})",
+        compact["sourceChannel_label"] = t(
+            f"service_order.source_channel.{source_channel}",
+            language=language,
         )
+        if compact["sourceChannel_label"] == f"service_order.source_channel.{source_channel}":
+            compact["sourceChannel_label"] = t(
+                "common.unknown_channel",
+                language=language,
+                value=source_channel,
+            )
 
     shutdown = compact.get("isShutdown")
     if isinstance(shutdown, int):
-        compact["isShutdown_label"] = SHUTDOWN_LABELS.get(
-            shutdown,
-            f"未知({shutdown})",
+        compact["isShutdown_label"] = t(
+            f"service_order.shutdown.{shutdown}",
+            language=language,
         )
+        if compact["isShutdown_label"] == f"service_order.shutdown.{shutdown}":
+            compact["isShutdown_label"] = t(
+                "common.unknown_value",
+                language=language,
+                value=shutdown,
+            )
 
     service_mode = compact.get("newServicemode")
     if isinstance(service_mode, int):
-        compact["newServicemode_label"] = SERVICE_MODE_LABELS.get(
-            service_mode,
-            f"未知({service_mode})",
+        compact["newServicemode_label"] = t(
+            f"service_order.service_mode.{service_mode}",
+            language=language,
         )
+        if compact["newServicemode_label"] == f"service_order.service_mode.{service_mode}":
+            compact["newServicemode_label"] = t(
+                "common.unknown_value",
+                language=language,
+                value=service_mode,
+            )
 
     return compact
 
@@ -198,7 +193,7 @@ def list_service_orders_tool(
             "page_num": page_num,
             "page_size": page_size,
             "vincode": _fixed_vincode(),
-            "records": [_compact_record(record) for record in limited_records],
+            "records": [_compact_record(record, language=language) for record in limited_records],
         },
     }
 
@@ -213,7 +208,7 @@ def get_service_order_detail_tool(
 ) -> dict:
     """Get one existing service order detail."""
     resolved_token = _resolve_customer_app_token(app_token, xcmg_app_token)
-    validation_error = _require(order_id, "order_id")
+    validation_error = _require(order_id, "order_id", language=language)
     if validation_error:
         return validation_error
 
@@ -231,12 +226,12 @@ def get_service_order_detail_tool(
 
     device_vin = str(record.get("deviceVin") or "").strip()
     if device_vin and device_vin != _fixed_vincode():
-        return _error("Service order does not belong to the fixed device.")
+        return _error(t("service_order.not_belong_to_fixed_device", language=language))
 
     return {
         "success": True,
         "data": {
             "order_id": order_id,
-            "record": _compact_record(record),
+            "record": _compact_record(record, language=language),
         },
     }
