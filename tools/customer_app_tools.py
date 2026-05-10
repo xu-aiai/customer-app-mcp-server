@@ -86,6 +86,18 @@ def _require(value: Optional[str], name: str) -> Optional[dict]:
     return None
 
 
+def _require_domestic_fault_range(
+    starttime: Optional[str],
+    endtime: Optional[str],
+) -> Optional[dict]:
+    if not _use_fixed_domestic_vincode():
+        return None
+    validation_error = _require(starttime, "starttime") or _require(endtime, "endtime")
+    if validation_error:
+        return validation_error
+    return None
+
+
 def _client(base_url: Optional[str]):
     return create_telematics_client(base_url=base_url)
 
@@ -562,7 +574,11 @@ def query_device_fault_page_tool(
 
     Calls GET /apiForAi/deviceFaultPage.
     Optional filters are vincode, faultcode, starttime, and endtime.
+    Domestic telematics requires starttime/endtime in yyyy-MM-dd format.
     """
+    validation_error = _require_domestic_fault_range(starttime, endtime)
+    if validation_error:
+        return validation_error
     try:
         response_data = _client(base_url).query_device_fault_page(
             token=token,
@@ -592,6 +608,13 @@ def query_device_fault_page_v2_tool(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
+    """故障告警分页查询 v2.
+
+    Domestic telematics requires starttime/endtime in yyyy-MM-dd format.
+    """
+    validation_error = _require_domestic_fault_range(starttime, endtime)
+    if validation_error:
+        return validation_error
     try:
         response_data = _client(base_url).query_device_fault_page_v2(
             token=token,

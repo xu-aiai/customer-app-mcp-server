@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import time
+from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional
 from urllib import error, parse, request
@@ -310,8 +311,12 @@ class DomesticTelematicsClient:
         del language
         return self.query_vehicle_alarm(
             vincode=str(params.get("vincode") or "").strip(),
-            start_time=str(params.get("starttime") or params.get("startTime") or ""),
-            end_time=str(params.get("endtime") or params.get("endTime") or ""),
+            start_time=self._normalize_alarm_date(
+                params.get("starttime") or params.get("startTime")
+            ),
+            end_time=self._normalize_alarm_date(
+                params.get("endtime") or params.get("endTime")
+            ),
             current=self._to_int(params.get("current"), default=1),
             size=self._to_int(params.get("size"), default=20),
         )
@@ -482,6 +487,20 @@ class DomesticTelematicsClient:
                 "queryType": force_query_type or self._infer_query_type(start_time, end_time),
             },
         )
+
+    @staticmethod
+    def _normalize_alarm_date(value: Optional[object]) -> str:
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+            return raw
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return raw
 
     def _signed_get(self, api_name: str, path: str, params: dict) -> dict:
         app_id = get_nested_config_value("domestic_telematics", "app_id")

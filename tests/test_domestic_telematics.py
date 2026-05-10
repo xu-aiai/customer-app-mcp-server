@@ -15,6 +15,7 @@ from clients.telematics_bridge import (
 from tools.customer_app_tools import (
     FIXED_VINCODE,
     _resolve_vincode,
+    query_device_fault_page_tool,
     query_vehicle_by_vincode_tool,
 )
 
@@ -140,11 +141,44 @@ class DomesticTelematicsTest(unittest.TestCase):
 
         mock_alarm.assert_called_once_with(
             vincode="VIN001",
-            start_time="2026-01-01 00:00:00",
-            end_time="2026-01-02 00:00:00",
+            start_time="2026-01-01",
+            end_time="2026-01-02",
             current=2,
             size=10,
         )
+
+    def test_query_device_fault_page_preserves_date_only_inputs(self):
+        client = DomesticTelematicsClient(base_url="https://example.com")
+
+        with patch.object(
+            client,
+            "query_vehicle_alarm",
+            return_value={"code": 0, "data": {}},
+        ) as mock_alarm:
+            client.query_device_fault_page(
+                current=1,
+                size=20,
+                vincode="VIN001",
+                starttime="2026-01-01",
+                endtime="2026-01-02",
+            )
+
+        mock_alarm.assert_called_once_with(
+            vincode="VIN001",
+            start_time="2026-01-01",
+            end_time="2026-01-02",
+            current=1,
+            size=20,
+        )
+
+    def test_query_device_fault_tool_requires_dates_in_domestic_mode(self):
+        with patch(
+            "tools.customer_app_tools.get_telematics_provider",
+            return_value=DOMESTIC_PROVIDER,
+        ):
+            result = query_device_fault_page_tool(vincode="VIN001", size=10)
+
+        self.assertEqual(result, {"success": False, "error": "starttime is required."})
 
 
 if __name__ == "__main__":

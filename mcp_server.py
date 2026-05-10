@@ -214,7 +214,8 @@ def query_planned_maintained_item_page(
     API: GET /apiForAi/queryPlannedMaintainedItemPage
     可选参数：
     - current/size/total: 分页参数。
-    - begin_date/end_date: 提醒开始/结束日期，格式 yyyy-MM-dd。
+    - begin_date: 提醒开始日期，格式 yyyy-MM-dd。
+    - end_date: 提醒结束日期，格式 yyyy-MM-dd。
     - vincode: 车架号 / Vehicle VIN.
     - item_name: 计划名称模糊搜索条件。
     """
@@ -425,7 +426,8 @@ def query_device_fault_page(
     - current/size/total: 分页参数。
     - vincode: 设备编码 / Device VIN.
     - faultcode: 故障代码。
-    - starttime/endtime: 开始/结束时间。
+    - starttime: 开始日期，格式 yyyy-MM-dd。
+    - endtime: 结束日期，格式 yyyy-MM-dd。
     """
     return query_device_fault_page_tool(
         total=total,
@@ -448,7 +450,17 @@ def query_work_rate(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query monthly work rate / 查询月度开工率。"""
+    """Query monthly work rate / 查询月度开工率。
+
+    适用问题：
+    - 查询某台设备某个月份的开工率。
+    - 获取月度维度的工作率统计。
+
+    API: domestic `GET /third-api/vehicle/getWorkRate`
+    必填参数：
+    - query_date: 查询月份，格式 yyyy-MM。
+    - vincode: 设备编码 / Device VIN.
+    """
     return query_work_rate_tool(
         query_date=query_date,
         vincode=vincode,
@@ -513,7 +525,20 @@ def query_history_work_condition(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query historical work condition / 查询历史工况。"""
+    """Query historical work condition / 查询历史工况。
+
+    适用问题：
+    - 查询某台设备一段时间内的历史工况数据。
+    - 分页查看历史运行/作业记录。
+
+    API: domestic `GET /third-api/vehicle/getHistory`
+    必填参数：
+    - start_time: 开始时间，格式 yyyy-MM-dd HH:mm:ss。
+    - end_time: 结束时间，格式 yyyy-MM-dd HH:mm:ss。
+    - vincode: 设备编码 / Device VIN.
+    可选参数：
+    - current/size: 分页参数，默认 1/20。
+    """
     return query_history_work_condition_tool(
         start_time=start_time,
         end_time=end_time,
@@ -549,7 +574,20 @@ def query_env_pro_history_data(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query historical environmental data / 查询环保历史工况。"""
+    """Query historical environmental data / 查询环保历史工况。
+
+    适用问题：
+    - 查询某台设备一段时间内的环保历史工况。
+    - 分页查看环保相关历史数据。
+
+    API: domestic `GET /third-api/vehicle/getEnvProHistoryData`
+    必填参数：
+    - start_time: 开始时间，格式 yyyy-MM-dd HH:mm:ss。
+    - end_time: 结束时间，格式 yyyy-MM-dd HH:mm:ss。
+    - vincode: 设备编码 / Device VIN.
+    可选参数：
+    - current/size: 分页参数，默认 1/20。
+    """
     return query_env_pro_history_data_tool(
         start_time=start_time,
         end_time=end_time,
@@ -571,7 +609,20 @@ def query_vehicle_alarm(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query vehicle alarms / 查询设备故障报警。"""
+    """Query vehicle alarms / 查询设备故障报警。
+
+    适用问题：
+    - 查询某台设备的故障报警记录。
+    - 分页查看报警历史。
+
+    API: domestic `GET /third-api/vehicle/getVehicleAlarm`
+    必填参数：
+    - start_time: 开始日期，格式 yyyy-MM-dd。
+    - end_time: 结束日期，格式 yyyy-MM-dd。
+    - vincode: 设备编码 / Device VIN.
+    可选参数：
+    - current/size: 分页参数，默认 1/20。
+    """
     return query_vehicle_alarm_tool(
         start_time=start_time,
         end_time=end_time,
@@ -821,7 +872,18 @@ def query_work_hours_statistic_info_by_vehicle_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query work-hour summary by vehicle v2 / 按车查询工时汇总 v2。"""
+    """Query work-hour summary by vehicle v2 / 按车查询工时汇总 v2。
+
+    适用问题：
+    - 统计某台车一段时间内的运行时间、工作时间、怠速时间。
+    - 查看某台设备在开始日期到结束日期之间的工时汇总。
+
+    API: POST /apiForAi/v2/queryWorkHoursStatisticInfoByVehicle
+    必填参数：
+    - begin_date: 开始日期，格式 yyyy-MM-dd。
+    - end_date: 结束日期，格式 yyyy-MM-dd。
+    - vincode: 设备编码/车架号 / Device VIN or chassis number.
+    """
     return query_work_hours_statistic_info_by_vehicle_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
@@ -845,7 +907,21 @@ def query_planned_maintained_item_page_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query planned maintenance reminders v2 / 查询计划维保提醒 v2。"""
+    """Query planned maintenance reminders v2 / 查询计划维保提醒 v2。
+
+    适用问题：
+    - 查询某台车的计划维保记录。
+    - 按提醒日期范围、车架号、计划名称筛选维保计划。
+    - 分页查看计划维护项目。
+
+    API: GET /apiForAi/v2/queryPlannedMaintainedItemPage
+    可选参数：
+    - current/size/total: 分页参数。
+    - begin_date: 提醒开始日期，格式 yyyy-MM-dd。
+    - end_date: 提醒结束日期，格式 yyyy-MM-dd。
+    - vincode: 车架号 / Vehicle VIN.
+    - item_name: 计划名称模糊搜索条件。
+    """
     return query_planned_maintained_item_page_v2_tool(
         total=total,
         size=size,
@@ -873,7 +949,22 @@ def query_work_hours_page_new_by_date_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query work-hour details by date v2 / 按日期查询工时明细 v2。"""
+    """Query work-hour details by date v2 / 按日期查询工时明细 v2。
+
+    适用问题：
+    - 查询某台车每天的运行时间、工作时间、怠速时间明细。
+    - 按日期分页查看设备工时记录。
+    - 需要明细列表时使用本工具；只要汇总时使用 query_work_hours_statistic_info_by_vehicle_v2。
+
+    API: GET /apiForAi/v2/queryWorkHoursPageNewByDate
+    必填参数：
+    - begin_date: 开始日期，格式 yyyy-MM-dd。
+    - end_date: 结束日期，格式 yyyy-MM-dd。
+    - vincode: 设备编码 / Device VIN.
+    可选参数：
+    - current/size/total: 分页参数。
+    - order_asc: 排序顺序，1 表示时间正序，默认倒序。
+    """
     return query_work_hours_page_new_by_date_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
@@ -897,7 +988,19 @@ def get_worktime_calendar_list_from_doris_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query worktime calendar v2 / 查询工作日历 v2。"""
+    """Query worktime calendar v2 / 查询工作日历 v2。
+
+    适用问题：
+    - 查询设备某段时间的工作日历。
+    - 查看某台车哪些日期有工作记录。
+    - 按日期正序获取工作日历列表。
+
+    API: GET /apiForAi/v2/getWorktimeCalendarListFromDoris
+    必填参数：
+    - begin_date: 开始日期，格式 yyyy-MM-dd。
+    - end_date: 结束日期，格式 yyyy-MM-dd。
+    - vincode: 设备编码 / Device VIN.
+    """
     return get_worktime_calendar_list_from_doris_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
@@ -917,7 +1020,19 @@ def query_trace_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query trace playback v2 / 查询设备轨迹 v2。"""
+    """Query trace playback v2 / 查询设备轨迹 v2。
+
+    适用问题：
+    - 查询车辆/设备轨迹。
+    - 查看某台车在某段时间的行驶路线、历史定位点。
+    - 获取设备从开始时间到结束时间的轨迹数据。
+
+    API: GET /apiForAi/v2/trace
+    必填参数：
+    - begin_time: 开始时间，格式 yyyy-MM-dd HH:mm:ss。
+    - end_time: 结束时间，格式 yyyy-MM-dd HH:mm:ss。
+    - vincode: 设备编码 / Device VIN.
+    """
     return query_trace_v2_tool(
         begin_time=begin_time,
         end_time=end_time,
@@ -965,7 +1080,21 @@ def query_device_fault_page_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query fault alarms v2 / 查询故障告警 v2。"""
+    """Query fault alarms v2 / 查询故障告警 v2。
+
+    适用问题：
+    - 查询某台设备的故障告警。
+    - 按故障代码筛选告警记录。
+    - 按开始时间和结束时间分页查看故障列表。
+
+    API: GET /apiForAi/v2/deviceFaultPage
+    可选参数：
+    - current/size/total: 分页参数。
+    - vincode: 设备编码 / Device VIN.
+    - faultcode: 故障代码。
+    - starttime: 开始日期，格式 yyyy-MM-dd。
+    - endtime: 结束日期，格式 yyyy-MM-dd。
+    """
     return query_device_fault_page_v2_tool(
         total=total,
         size=size,
@@ -989,7 +1118,19 @@ def query_core_info_v2(
     language: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> dict:
-    """Query core statistics v2 / 查询核心统计信息 v2。"""
+    """Query core statistics v2 / 查询核心统计信息 v2。
+
+    适用问题：
+    - 查询车辆核心统计指标。
+    - 获取某台设备一段时间内的关键经营/运行统计。
+    - 需要通用核心汇总信息时使用本工具。
+
+    API: POST /apiForAi/v2/queryCoreInfo
+    必填参数：
+    - begin_date: 开始日期，格式 yyyy-MM-dd。
+    - end_date: 结束日期，格式 yyyy-MM-dd。
+    - vincode: 设备编码/车架号 / Device VIN or chassis number.
+    """
     return query_core_info_v2_tool(
         begin_date=begin_date,
         end_date=end_date,
