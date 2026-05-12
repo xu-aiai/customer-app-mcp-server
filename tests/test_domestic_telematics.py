@@ -39,6 +39,16 @@ class FakeDomesticClient:
         }
 
 
+class FakeFaultPageClient:
+    def query_device_fault_page(self, **kwargs):
+        del kwargs
+        return {
+            "code": 1,
+            "msg": "参数错误:startTime: 开始时间不能为空; endTime: 结束时间不能为空",
+            "data": None,
+        }
+
+
 class DomesticTelematicsTest(unittest.TestCase):
     def test_generate_sign_uses_ascii_sorted_key_value_pairs(self):
         sign = DomesticTelematicsClient._generate_sign(
@@ -179,6 +189,25 @@ class DomesticTelematicsTest(unittest.TestCase):
             result = query_device_fault_page_tool(vincode="VIN001", size=10)
 
         self.assertEqual(result, {"success": False, "error": "starttime is required."})
+
+    def test_query_device_fault_tool_localizes_known_param_error_for_english(self):
+        with patch(
+            "tools.customer_app_tools._client",
+            return_value=FakeFaultPageClient(),
+        ):
+            result = query_device_fault_page_tool(
+                vincode="VIN001",
+                size=10,
+                current=1,
+                starttime="2026-01-01",
+                endtime="2026-01-02",
+                language="en-US",
+            )
+
+        self.assertEqual(
+            result["data"]["msg"],
+            "Invalid parameters: startTime is required; endTime is required.",
+        )
 
 
 if __name__ == "__main__":

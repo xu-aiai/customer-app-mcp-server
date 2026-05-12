@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+from i18n import get_language
 from clients.telematics_bridge import (
     DOMESTIC_PROVIDER,
     create_telematics_client,
@@ -69,6 +70,42 @@ def _error(message: str) -> dict:
         "success": False,
         "error": message,
     }
+
+
+def _is_english_language(language: Optional[str]) -> bool:
+    return get_language(language) == "en-US"
+
+
+def _localize_fault_page_message(message: Optional[str], language: Optional[str] = None) -> Optional[str]:
+    text = str(message or "").strip()
+    if not text or not _is_english_language(language):
+        return message
+
+    if (
+        "startTime" in text
+        and "开始时间不能为空" in text
+        and "endTime" in text
+        and "结束时间不能为空" in text
+    ):
+        return "Invalid parameters: startTime is required; endTime is required."
+
+    if text.startswith("参数错误:"):
+        return text.replace("参数错误:", "Invalid parameters: ", 1)
+
+    return message
+
+
+def _localize_fault_page_response(response_data: dict, language: Optional[str] = None) -> dict:
+    if not isinstance(response_data, dict):
+        return response_data
+    if "msg" not in response_data:
+        return response_data
+    localized_message = _localize_fault_page_message(response_data.get("msg"), language=language)
+    if localized_message == response_data.get("msg"):
+        return response_data
+    localized_response = dict(response_data)
+    localized_response["msg"] = localized_message
+    return localized_response
 
 
 def _wrap_response(response_data: dict) -> dict:
@@ -593,6 +630,7 @@ def query_device_fault_page_tool(
         )
     except ValueError as exc:
         return _error(str(exc))
+    response_data = _localize_fault_page_response(response_data, language=language)
     return _wrap_response(response_data)
 
 
@@ -629,6 +667,7 @@ def query_device_fault_page_v2_tool(
         )
     except ValueError as exc:
         return _error(str(exc))
+    response_data = _localize_fault_page_response(response_data, language=language)
     return _wrap_response(response_data)
 
 
