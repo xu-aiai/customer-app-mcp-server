@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from json import JSONDecodeError
 from typing import Optional
 from urllib import error, parse, request
@@ -309,14 +309,14 @@ class DomesticTelematicsClient:
     ) -> dict:
         del token
         del language
+        start_time, end_time = self._normalize_alarm_range(
+            params.get("starttime") or params.get("startTime"),
+            params.get("endtime") or params.get("endTime"),
+        )
         return self.query_vehicle_alarm(
             vincode=str(params.get("vincode") or "").strip(),
-            start_time=self._normalize_alarm_date(
-                params.get("starttime") or params.get("startTime")
-            ),
-            end_time=self._normalize_alarm_date(
-                params.get("endtime") or params.get("endTime")
-            ),
+            start_time=start_time,
+            end_time=end_time,
             current=self._to_int(params.get("current"), default=1),
             size=self._to_int(params.get("size"), default=20),
         )
@@ -501,6 +501,30 @@ class DomesticTelematicsClient:
             except ValueError:
                 continue
         return raw
+
+    @classmethod
+    def _normalize_alarm_range(
+        cls,
+        start_value: Optional[object],
+        end_value: Optional[object],
+    ) -> tuple[str, str]:
+        start_time = cls._normalize_alarm_date(start_value)
+        end_time = cls._normalize_alarm_date(end_value)
+        if (
+            start_time
+            and end_time
+            and start_time == end_time
+            and cls._is_date_only(start_value)
+            and cls._is_date_only(end_value)
+        ):
+            end_time = (
+                datetime.strptime(end_time, "%Y-%m-%d") + timedelta(days=1)
+            ).strftime("%Y-%m-%d")
+        return start_time, end_time
+
+    @staticmethod
+    def _is_date_only(value: Optional[object]) -> bool:
+        return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value or "").strip()))
 
     def _signed_get(self, api_name: str, path: str, params: dict) -> dict:
         app_id = get_nested_config_value("domestic_telematics", "app_id")

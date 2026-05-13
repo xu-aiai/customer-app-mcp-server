@@ -181,6 +181,30 @@ class DomesticTelematicsTest(unittest.TestCase):
             size=20,
         )
 
+    def test_query_device_fault_page_expands_same_day_date_only_range(self):
+        client = DomesticTelematicsClient(base_url="https://example.com")
+
+        with patch.object(
+            client,
+            "query_vehicle_alarm",
+            return_value={"code": 0, "data": {}},
+        ) as mock_alarm:
+            client.query_device_fault_page(
+                current=1,
+                size=20,
+                vincode="VIN001",
+                starttime="2026-05-13",
+                endtime="2026-05-13",
+            )
+
+        mock_alarm.assert_called_once_with(
+            vincode="VIN001",
+            start_time="2026-05-13",
+            end_time="2026-05-14",
+            current=1,
+            size=20,
+        )
+
     def test_query_device_fault_tool_requires_dates_in_domestic_mode(self):
         with patch(
             "tools.customer_app_tools.get_telematics_provider",
