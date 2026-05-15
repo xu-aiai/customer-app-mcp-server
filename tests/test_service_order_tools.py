@@ -11,6 +11,7 @@ from tools.service_order_tools import (
     get_service_order_detail_tool,
     list_service_orders_tool,
 )
+from clients.service_order import ServiceOrderClient
 
 
 class FakeServiceOrderClient:
@@ -116,6 +117,26 @@ class ServiceOrderToolsTokenTest(unittest.TestCase):
         record = result["data"]["records"][0]
         self.assertEqual(record["status_label"], "Pending assignment")
         self.assertEqual(record["orderType_label"], "Repair")
+
+    def test_service_order_client_formats_nested_backend_error(self):
+        body = {
+            "success": False,
+            "error": (
+                '{"timestamp":"2026-05-11 15:00 UTC+08","status":500,'
+                '"error":"Internal Server Error",'
+                '"message":"I/O error on POST request for \\"http://iot-auth/oauth/check_token\\": '
+                'Connection refused (Connection refused)",'
+                '"path":"/serviceOrderUnion/getPage"}'
+            ),
+        }
+
+        with self.assertRaises(ValueError) as context:
+            ServiceOrderClient()._ensure_success(body)
+
+        message = str(context.exception)
+        self.assertIn("status=500", message)
+        self.assertIn("path=/serviceOrderUnion/getPage", message)
+        self.assertIn("iot-auth/oauth/check_token", message)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import json
+from json import JSONDecodeError
 from typing import Optional
 
 from clients.customer_app import CustomerAppClient, REQUEST_TIMEOUT_SECONDS
@@ -74,9 +76,40 @@ class ServiceOrderClient:
 
     def _ensure_success(self, body: dict) -> None:
         if body.get("success") is False:
-            raise ValueError(body.get("error") or "Service order request failed.")
+            raise ValueError(self._format_failure(body))
         if body.get("ok") is not True or body.get("code") != 0:
             raise ValueError(
                 "Service order API failed: "
                 f"code={body.get('code')} msg={body.get('msg')}"
             )
+
+    def _format_failure(self, body: dict) -> str:
+        raw_error = body.get("error") or body.get("message") or body.get("msg")
+        parsed_error = self._parse_json_object(raw_error)
+        if parsed_error:
+            parts = [
+                "Service order API failed",
+                f"status={parsed_error.get('status')}",
+                f"error={parsed_error.get('error')}",
+                f"path={parsed_error.get('path')}",
+                f"message={parsed_error.get('message')}",
+            ]
+            return "; ".join(part for part in parts if not part.endswith("=None"))
+
+        status_code = body.get("status_code")
+        if status_code:
+            return f"Service order API failed: status={status_code} error={raw_error}"
+        return str(raw_error or "Service order request failed.")
+
+    def _parse_json_object(self, value) -> Optional[dict]:
+        if isinstance(value, dict):
+            return value
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = json.loads(value)
+        except JSONDecodeError:
+            return None
+        if isinstance(parsed, dict):
+            return parsed
+        return None

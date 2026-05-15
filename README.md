@@ -41,6 +41,15 @@ The command above starts all enabled servers in `mcp_config.json`. `--no-capture
 
 上面的命令会启动 `mcp_config.json` 中所有启用的服务。`--no-capture-output` 可以让运行日志实时显示。
 
+Run in background (Ubuntu/Linux) | Ubuntu/Linux 后台启动:
+```bash
+nohup conda run -n customer-app-mcp-server python mcp_pipe.py > mcp_pipe.log 2>&1 &
+```
+
+The background command starts the pipe as a detached process and writes stdout/stderr to `mcp_pipe.log`.
+
+后台命令会以脱离终端的方式启动管道，并将标准输出和错误输出都写入 `mcp_pipe.log`。
+
 You can also run the server script directly:
 
 也可以直接指定服务脚本启动：
