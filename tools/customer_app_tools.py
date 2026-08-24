@@ -123,16 +123,33 @@ def _require(value: Optional[str], name: str) -> Optional[dict]:
     return None
 
 
-def _require_domestic_fault_range(
+def _ask_for_domestic_fault_range(
     starttime: Optional[str],
     endtime: Optional[str],
 ) -> Optional[dict]:
     if not _use_fixed_domestic_vincode():
         return None
-    validation_error = _require(starttime, "starttime") or _require(endtime, "endtime")
-    if validation_error:
-        return validation_error
-    return None
+
+    missing_parameters = [
+        name
+        for name, value in (("starttime", starttime), ("endtime", endtime))
+        if value is None or not str(value).strip()
+    ]
+    if not missing_parameters:
+        return None
+
+    message = (
+        "查询故障告警需要补充开始日期（starttime）、结束日期（endtime）"
+        "（格式 yyyy-MM-dd）。请向用户询问需要查询的时间范围，收到后再调用此工具。"
+    )
+    return {
+        "success": True,
+        "action": "ask_missing_info",
+        "requires_user_input": True,
+        "missing_parameters": missing_parameters,
+        "message": message,
+        "response": message,
+    }
 
 
 def _client(base_url: Optional[str]):
@@ -613,9 +630,9 @@ def query_device_fault_page_tool(
     Optional filters are vincode, faultcode, starttime, and endtime.
     Domestic telematics requires starttime/endtime in yyyy-MM-dd format.
     """
-    validation_error = _require_domestic_fault_range(starttime, endtime)
-    if validation_error:
-        return validation_error
+    clarification = _ask_for_domestic_fault_range(starttime, endtime)
+    if clarification:
+        return clarification
     try:
         response_data = _client(base_url).query_device_fault_page(
             token=token,
@@ -650,9 +667,9 @@ def query_device_fault_page_v2_tool(
 
     Domestic telematics requires starttime/endtime in yyyy-MM-dd format.
     """
-    validation_error = _require_domestic_fault_range(starttime, endtime)
-    if validation_error:
-        return validation_error
+    clarification = _ask_for_domestic_fault_range(starttime, endtime)
+    if clarification:
+        return clarification
     try:
         response_data = _client(base_url).query_device_fault_page_v2(
             token=token,

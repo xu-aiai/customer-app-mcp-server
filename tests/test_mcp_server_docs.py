@@ -46,6 +46,7 @@ class MCPServerDocstringTest(unittest.TestCase):
             "query_device_fault_page": [
                 "starttime: 开始日期，格式 yyyy-MM-dd。",
                 "endtime: 结束日期，格式 yyyy-MM-dd。",
+                "国内模式下 starttime 和 endtime 为必填项；如用户未提供时间范围，先询问用户后再调用工具。",
             ],
             "query_work_rate": [
                 "query_date: 查询月份，格式 yyyy-MM。",
@@ -89,6 +90,7 @@ class MCPServerDocstringTest(unittest.TestCase):
             "query_device_fault_page_v2": [
                 "starttime: 开始日期，格式 yyyy-MM-dd。",
                 "endtime: 结束日期，格式 yyyy-MM-dd。",
+                "国内模式下 starttime 和 endtime 为必填项；如用户未提供时间范围，先询问用户后再调用工具。",
             ],
             "query_core_info_v2": [
                 "begin_date: 开始日期，格式 yyyy-MM-dd。",

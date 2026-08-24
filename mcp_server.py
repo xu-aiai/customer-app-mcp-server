@@ -428,6 +428,8 @@ def query_device_fault_page(
     - faultcode: 故障代码。
     - starttime: 开始日期，格式 yyyy-MM-dd。
     - endtime: 结束日期，格式 yyyy-MM-dd。
+
+    国内模式下 starttime 和 endtime 为必填项；如用户未提供时间范围，先询问用户后再调用工具。
     """
     return query_device_fault_page_tool(
         total=total,
@@ -1094,6 +1096,8 @@ def query_device_fault_page_v2(
     - faultcode: 故障代码。
     - starttime: 开始日期，格式 yyyy-MM-dd。
     - endtime: 结束日期，格式 yyyy-MM-dd。
+
+    国内模式下 starttime 和 endtime 为必填项；如用户未提供时间范围，先询问用户后再调用工具。
     """
     return query_device_fault_page_v2_tool(
         total=total,

@@ -205,14 +205,44 @@ class DomesticTelematicsTest(unittest.TestCase):
             size=20,
         )
 
-    def test_query_device_fault_tool_requires_dates_in_domestic_mode(self):
+    def test_query_device_fault_tool_requests_missing_dates_in_domestic_mode(self):
         with patch(
             "tools.customer_app_tools.get_telematics_provider",
             return_value=DOMESTIC_PROVIDER,
         ):
             result = query_device_fault_page_tool(vincode="VIN001", size=10)
 
-        self.assertEqual(result, {"success": False, "error": "starttime is required."})
+        self.assertEqual(
+            result,
+            {
+                "success": True,
+                "action": "ask_missing_info",
+                "requires_user_input": True,
+                "missing_parameters": ["starttime", "endtime"],
+                "message": (
+                    "查询故障告警需要补充开始日期（starttime）、结束日期（endtime）"
+                    "（格式 yyyy-MM-dd）。请向用户询问需要查询的时间范围，收到后再调用此工具。"
+                ),
+                "response": (
+                    "查询故障告警需要补充开始日期（starttime）、结束日期（endtime）"
+                    "（格式 yyyy-MM-dd）。请向用户询问需要查询的时间范围，收到后再调用此工具。"
+                ),
+            },
+        )
+
+    def test_query_device_fault_tool_lists_only_missing_dates(self):
+        with patch(
+            "tools.customer_app_tools.get_telematics_provider",
+            return_value=DOMESTIC_PROVIDER,
+        ):
+            result = query_device_fault_page_tool(
+                vincode="VIN001",
+                starttime="2026-08-01",
+            )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["action"], "ask_missing_info")
+        self.assertEqual(result["missing_parameters"], ["endtime"])
 
     def test_query_device_fault_tool_localizes_known_param_error_for_english(self):
         with patch(
